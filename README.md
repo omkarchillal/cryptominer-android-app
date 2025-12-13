@@ -14,6 +14,8 @@ Place environment variables into `backend/.env` (the `backend` directory contain
 - PORT (defaults to 3000)
 - BASE_RATE, MAX_MULTIPLIER (used for mining calculations)
 
+> Deployed backend: https://cryptominer-android-app.onrender.com
+
 > Important: Never commit production credentials to the repo. Use `.env` locally and secret managers in production.
 
 ### Run Backend
