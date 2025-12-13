@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
-import { User } from '../models/User';
 import { Referral } from '../models/Referral';
 import { AdReward } from '../models/AdReward';
+import { MiningSession } from '../models/MiningSession';
 
 const MAX_DAILY_CLAIMS = 6;
 const REWARD_OPTIONS = [10, 20, 30, 40, 50, 60];
@@ -57,14 +57,24 @@ export const claimAdReward = async (req: Request, res: Response) => {
     // Get random reward
     const reward = getRandomReward();
 
-    // Update referral balance
+    // Ensure referral record is present (created during signup)
     const referral = await Referral.findOne({ walletAddress });
     if (!referral) {
       return res.status(404).json({ error: 'Referral record not found' });
     }
 
+    // Update referral totalBalance (keep referral metrics and source-of-truth consistent)
     referral.totalBalance += reward;
     await referral.save();
+
+    // If there's an active mining session, also add reward to the session.totalCoins
+    const session = await MiningSession.findOne({ walletAddress, status: 'mining' }).sort({ createdAt: -1 });
+    let newBalance: number | undefined = referral.totalBalance;
+    if (session) {
+      session.totalCoins += reward;
+      await session.save();
+      newBalance = session.totalCoins;
+    }
 
     // Create a new entry for this claim
     const adRewardEntry = new AdReward({
@@ -83,7 +93,7 @@ export const claimAdReward = async (req: Request, res: Response) => {
     return res.json({
       success: true,
       reward,
-      newBalance: referral.totalBalance,
+      newBalance,
       claimedCount: newClaimsCount,
       remainingClaims: MAX_DAILY_CLAIMS - newClaimsCount,
     });
