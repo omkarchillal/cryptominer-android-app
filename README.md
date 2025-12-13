@@ -1,97 +1,195 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+## Getting Started
 
-# Getting Started
+Below are quick setup, run instructions, and additional context for running and developing the Crypto Miner App locally.
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+### Prerequisites
+- Node.js >= 20 (see `package.json` engines)
+- npm or yarn
+- Android Studio (for `npm run android`), or Xcode (for iOS builds on macOS).
+- MongoDB Atlas connection or local MongoDB instance
 
-## Step 1: Start Metro
+### Environment
+Place environment variables into `backend/.env` (the `backend` directory contains the server code):
+- MONGO_URI: e.g. `MONGO_URI=mongodb+srv://<user>:<password>@cluster.mongodb.net/cryptominerapp?retryWrites=true&w=majority`
+- PORT (defaults to 3000)
+- BASE_RATE, MAX_MULTIPLIER (used for mining calculations)
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+> Important: Never commit production credentials to the repo. Use `.env` locally and secret managers in production.
 
-To start the Metro dev server, run the following command from the root of your React Native project:
+### Run Backend
+1) Install dependencies in backend: `cd backend && npm ci`
+2) Start backend in development: `npm run dev` (the backend uses `ts-node` and `nodemon` in development)
 
-```sh
-# Using npm
-npm start
+### Run App (React Native)
+1) Install root dependencies: `npm ci` at the root of the repo.
+2) Start Metro: `npm start` or `npm run start` (already configured in `package.json`).
+3) For Android: `npm run android` (or `npx react-native run-android`).
+4) For iOS: `npm run ios` (macOS only, requires Xcode).
 
-# OR using Yarn
-yarn start
-```
+### Useful Commands
+- Install all dependencies (root + backend):
+	```bash
+	npm ci
+	cd backend && npm ci
+	```
+- Start app and backend (two terminals):
+	```bash
+	cd backend && npm run dev # Terminal 1
+	cd .. # go to root
+	npm start                 # Terminal 2
+	npm run android           # Launch Android build
+	```
 
-## Step 2: Build and run your app
+---
 
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
+## Recent Fixes / Notes
+- Watch Ads Reward: Fixed an issue where wallet balance did not reflect ad rewards when a user had an active mining session. Ad rewards now increment the user's mining session `totalCoins` (when active) and the `referral.totalBalance` (fallback). The server endpoint `/api/ad-rewards/claim` returns `newBalance` so the frontend can refresh the balance immediately.
+functionality "🪙 Crypto Miner App – Working / App Flow
 
-### Android
+The Crypto Miner App enables users to mine tokens, earn rewards through advertisements, and increase earnings using referrals and mining multipliers. Below is a complete overview of how the application functions.
 
-```sh
-# Using npm
-npm run android
+🔐 User Authentication
 
-# OR using Yarn
-yarn android
-```
+Users log in using their wallet address.
 
-### iOS
+No username or password is required.
 
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
+After successful authentication, users are redirected to the Home Page.
 
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
+🏠 Home Page
 
-```sh
-bundle install
-```
+Once logged in, users can access the following features:
 
-Then, and every time you update your native dependencies, run:
+Start Mining – Begin the token mining process.
 
-```sh
-bundle exec pod install
-```
+Watch Ads & Earn Tokens
 
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
+Watch rewarded ads to earn 10–60 tokens (randomized).
 
-```sh
-# Using npm
-npm run ios
+Limited to 6 rewarded ads per day.
 
-# OR using Yarn
-yarn ios
-```
+Refer & Earn – Invite friends and earn referral rewards.
 
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
+Leaderboard – View the top miners on the platform.
 
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
+Notifications – Receive updates related to mining, rewards, and system announcements.
 
-## Step 3: Modify your app
+Banner Ads are displayed across all pages of the app.
 
-Now that you have successfully run the app, let's make changes!
+⛏️ Mining System
+⏱️ Mining Durations
 
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
+Users can choose one of the following mining durations:
 
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
+1 hour
 
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
+2 hours
 
-## Congratulations! :tada:
+4 hours
 
-You've successfully run and modified your React Native App. :partying_face:
+12 hours
 
-### Now what?
+24 hours
 
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
+Important Notes:
 
-# Troubleshooting
+Once mining starts, it cannot be canceled.
 
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
+Mining runs continuously until the selected duration is completed.
 
-# Learn More
+🔁 Mining Multiplier
 
-To learn more about React Native, take a look at the following resources:
+All users start with a 1× multiplier.
 
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+The multiplier can be upgraded up to 6×.
+
+Each upgrade requires watching a Google Rewarded Ad.
+
+Higher multipliers increase the mining speed and total rewards.
+
+📊 Mining Page Details
+
+While mining is active, users can view:
+
+Remaining mining time
+
+Mining progress
+
+Tokens mined so far
+
+Selected mining duration
+
+Current multiplier
+
+Mining rate
+
+Option to upgrade multiplier (if available)
+
+After mining is completed:
+
+A Claim button appears to collect the mined tokens.
+
+🤝 Refer & Earn Program
+
+Users can earn additional tokens by referring new users to the platform.
+
+🔗 Referral Process
+
+Each user receives a unique referral code.
+
+The referral code can be:
+
+Copied manually
+
+Shared via social media or messaging apps
+
+🎁 Referral Rewards
+
+When User A refers User B:
+
+User A earns 200 tokens
+
+User B earns 100 tokens
+
+User A additionally earns 10% of User B’s mining rewards whenever User B mines
+
+📈 Referral Tracking
+
+Users can track:
+
+Total number of referrals
+
+Direct referral rewards earned
+
+Mining bonus earned from referred users
+
+📢 Advertisements
+
+Rewarded Ads
+
+Used to earn bonus tokens
+
+Used to upgrade mining multipliers
+
+Banner Ads
+
+Displayed throughout the application
+
+🏆 Leaderboard
+
+Displays users ranked by total mined tokens.
+
+Encourages competition and long-term engagement.
+
+🔔 Notifications
+
+Users receive in-app notifications for:
+
+Mining completion
+
+Token rewards
+
+Referral bonuses
+
+System updates and announcements
+"

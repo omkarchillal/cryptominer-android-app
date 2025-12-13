@@ -1,6 +1,5 @@
 import { Request, Response } from 'express';
 import { MiningSession } from '../models/MiningSession';
-import { User } from '../models/User';
 import { Referral } from '../models/Referral';
 import { ReferralBonus } from '../models/ReferralBonus';
 import { Notification } from '../models/Notification';
