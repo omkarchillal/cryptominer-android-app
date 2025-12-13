@@ -1,0 +1,32 @@
+package com.cryptominerapp
+
+import android.os.Bundle
+import com.facebook.react.ReactActivity
+import com.facebook.react.ReactActivityDelegate
+import com.facebook.react.defaults.DefaultNewArchitectureEntryPoint.fabricEnabled
+import com.facebook.react.defaults.DefaultReactActivityDelegate
+
+class MainActivity : ReactActivity() {
+
+  /**
+   * Returns the name of the main component registered from JavaScript. This is used to schedule
+   * rendering of the component.
+   */
+  override fun getMainComponentName(): String = "cryptominerapp"
+
+  /**
+   * Called when the activity is starting. Switch from splash theme to app theme.
+   */
+  override fun onCreate(savedInstanceState: Bundle?) {
+    // Switch to AppTheme before calling super to avoid white screen
+    setTheme(R.style.AppTheme)
+    super.onCreate(savedInstanceState)
+  }
+
+  /**
+   * Returns the instance of the [ReactActivityDelegate]. We use [DefaultReactActivityDelegate]
+   * which allows you to enable New Architecture with a single boolean flags [fabricEnabled]
+   */
+  override fun createReactActivityDelegate(): ReactActivityDelegate =
+      DefaultReactActivityDelegate(this, mainComponentName, fabricEnabled)
+}
