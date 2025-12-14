@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   ScrollView,
   RefreshControl,
-  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
@@ -15,6 +14,7 @@ import {
   notificationApiService,
   Notification,
 } from '../services/notificationApiService';
+import { CustomPopup } from '../components/CustomPopup';
 
 export default function NotificationsScreen({ navigation }: any) {
   const { walletAddress } = useMining();
@@ -22,6 +22,16 @@ export default function NotificationsScreen({ navigation }: any) {
   const [unreadCount, setUnreadCount] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [popup, setPopup] = useState({
+    visible: false,
+    title: '',
+    message: '',
+    icon: '',
+    primaryButtonText: 'Okay',
+    secondaryButtonText: '',
+    onPrimaryPress: () => setPopup(prev => ({ ...prev, visible: false })),
+    onSecondaryPress: undefined as (() => void) | undefined,
+  });
 
   useEffect(() => {
     if (walletAddress) {
@@ -69,7 +79,16 @@ export default function NotificationsScreen({ navigation }: any) {
       setUnreadCount(0);
     } catch (error) {
       console.error('Failed to mark all as read:', error);
-      Alert.alert('Error', 'Failed to mark all notifications as read');
+      setPopup({
+        visible: true,
+        title: 'Error',
+        message: 'Failed to mark all notifications as read',
+        icon: '❌',
+        primaryButtonText: 'Okay',
+        secondaryButtonText: '',
+        onPrimaryPress: () => setPopup(prev => ({ ...prev, visible: false })),
+        onSecondaryPress: undefined,
+      });
     }
   };
 
@@ -79,8 +98,33 @@ export default function NotificationsScreen({ navigation }: any) {
       setNotifications(prev => prev.filter(n => n._id !== notificationId));
     } catch (error) {
       console.error('Failed to delete notification:', error);
-      Alert.alert('Error', 'Failed to delete notification');
+      setPopup({
+        visible: true,
+        title: 'Error',
+        message: 'Failed to delete notification',
+        icon: '❌',
+        primaryButtonText: 'Okay',
+        secondaryButtonText: '',
+        onPrimaryPress: () => setPopup(prev => ({ ...prev, visible: false })),
+        onSecondaryPress: undefined,
+      });
     }
+  };
+
+  const showDeleteConfirmation = (notificationId: string) => {
+    setPopup({
+      visible: true,
+      title: 'Delete Notification',
+      message: 'Are you sure you want to delete this notification?',
+      icon: '🗑️',
+      primaryButtonText: 'Delete',
+      secondaryButtonText: 'Cancel',
+      onPrimaryPress: () => {
+        setPopup(prev => ({ ...prev, visible: false }));
+        handleDelete(notificationId);
+      },
+      onSecondaryPress: () => setPopup(prev => ({ ...prev, visible: false })),
+    });
   };
 
   const getNotificationIcon = (type: string) => {
@@ -194,20 +238,7 @@ export default function NotificationsScreen({ navigation }: any) {
                   </View>
                 </View>
                 <TouchableOpacity
-                  onPress={() => {
-                    Alert.alert(
-                      'Delete Notification',
-                      'Are you sure you want to delete this notification?',
-                      [
-                        { text: 'Cancel', style: 'cancel' },
-                        {
-                          text: 'Delete',
-                          style: 'destructive',
-                          onPress: () => handleDelete(notification._id),
-                        },
-                      ],
-                    );
-                  }}
+                  onPress={() => showDeleteConfirmation(notification._id)}
                   style={styles.deleteButton}
                 >
                   <Text style={styles.deleteButtonText}>×</Text>
@@ -217,6 +248,23 @@ export default function NotificationsScreen({ navigation }: any) {
           )}
         </ScrollView>
       </SafeAreaView>
+
+      <CustomPopup
+        visible={popup.visible}
+        title={popup.title}
+        message={popup.message}
+        icon={popup.icon}
+        primaryButtonText={popup.primaryButtonText}
+        secondaryButtonText={popup.secondaryButtonText}
+        onPrimaryPress={popup.onPrimaryPress}
+        onSecondaryPress={popup.onSecondaryPress}
+        onClose={() => setPopup(prev => ({ ...prev, visible: false }))}
+        primaryButtonColors={
+          popup.primaryButtonText === 'Delete'
+            ? ['#ef4444', '#dc2626', '#b91c1c']
+            : ['#9333ea', '#6d28d9', '#2563eb']
+        }
+      />
     </LinearGradient>
   );
 }
