@@ -9,6 +9,7 @@ import {
 } from 'react-native-google-mobile-ads';
 import { useMining } from '../contexts/MiningContext';
 import { adRewardService } from '../services/adRewardService';
+import { RewardEarnedPopup } from '../components/RewardEarnedPopup';
 
 // AdMob Rewarded Ad Unit ID for earning tokens
 const REWARDED_AD_UNIT_ID = __DEV__
@@ -23,6 +24,8 @@ export default function AdRewardScreen({ navigation }: any) {
   const [adShown, setAdShown] = useState(false);
   const [loading, setLoading] = useState(true);
   const [rewardClaimed, setRewardClaimed] = useState(false);
+  const [showRewardPopup, setShowRewardPopup] = useState(false);
+  const [earnedTokens, setEarnedTokens] = useState(0);
   const appState = useRef(AppState.currentState);
   const adShownTime = useRef<number | null>(null);
 
@@ -57,20 +60,9 @@ export default function AdRewardScreen({ navigation }: any) {
             `💰 User earned ${result.reward} tokens! (${result.claimedCount}/6 today)`,
           );
 
-          // Show success message
-          Alert.alert(
-            '🎉 Reward Earned!',
-            `You earned ${result.reward} tokens!\n\nClaims today: ${result.claimedCount}/6\nRemaining: ${result.remainingClaims}`,
-            [
-              {
-                text: 'Awesome!',
-                onPress: () => {
-                  // Navigate back to home
-                  navigation.navigate('Home');
-                },
-              },
-            ],
-          );
+          // Show custom reward popup
+          setEarnedTokens(result.reward);
+          setShowRewardPopup(true);
         } catch (error: any) {
           console.error('❌ Failed to claim ad reward:', error);
 
@@ -197,6 +189,16 @@ export default function AdRewardScreen({ navigation }: any) {
             </View>
           )}
         </View>
+
+        {/* Custom Reward Earned Popup */}
+        <RewardEarnedPopup
+          visible={showRewardPopup}
+          tokensEarned={earnedTokens}
+          onClose={() => {
+            setShowRewardPopup(false);
+            navigation.navigate('Home');
+          }}
+        />
       </SafeAreaView>
     </LinearGradient>
   );

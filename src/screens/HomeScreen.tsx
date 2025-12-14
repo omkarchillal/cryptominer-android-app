@@ -30,6 +30,7 @@ export default function HomeScreen({ navigation }: any) {
     configLoading,
   } = useMining();
   const [popup, setPopup] = useState(false);
+
   const [adRewardStatus, setAdRewardStatus] = useState({
     claimedCount: 0,
     remainingClaims: 6,
@@ -81,7 +82,7 @@ export default function HomeScreen({ navigation }: any) {
       return;
     }
 
-    // Navigate to AdRewardScreen to show the ad
+    // Navigate directly to AdRewardScreen
     navigation.navigate('AdReward');
   };
 

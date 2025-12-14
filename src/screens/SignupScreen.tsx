@@ -11,16 +11,26 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
 import { useMining } from '../contexts/MiningContext';
 import { api } from '../services/api';
+import { CustomPopup } from '../components/CustomPopup';
 
 export default function SignupScreen({ navigation }: any) {
   const { setWalletAddress, refreshBalance } = useMining();
   const [address, setAddress] = useState('');
   const [error, setError] = useState('');
+  const [showWalletPopup, setShowWalletPopup] = useState(false);
 
   const create = async () => {
+    const trimmedAddress = address.trim();
+
+    // Check if wallet address is empty
+    if (!trimmedAddress) {
+      setShowWalletPopup(true);
+      return;
+    }
+
     try {
-      await api.post('/api/users/signup', { walletAddress: address.trim() });
-      await setWalletAddress(address.trim());
+      await api.post('/api/users/signup', { walletAddress: trimmedAddress });
+      await setWalletAddress(trimmedAddress);
       await refreshBalance();
       navigation.replace('Home');
     } catch (error: any) {
@@ -46,7 +56,7 @@ export default function SignupScreen({ navigation }: any) {
             {/* Title */}
             <Text style={styles.title}>Crypto Miner</Text>
             <Text style={styles.subtitle}>
-              Enter your wallet address to start mining tokens
+              Enter your wallet address or name to start mining tokens
             </Text>
 
             {/* Input */}
@@ -57,7 +67,7 @@ export default function SignupScreen({ navigation }: any) {
                   setAddress(text);
                   setError('');
                 }}
-                placeholder="0x... or your wallet address"
+                placeholder="0x... wallet address or your name"
                 placeholderTextColor="rgba(255, 255, 255, 0.6)"
                 autoCapitalize="none"
                 style={styles.input}
@@ -78,6 +88,19 @@ export default function SignupScreen({ navigation }: any) {
             </TouchableOpacity>
           </View>
         </View>
+
+        {/* Custom Wallet Popup */}
+        <CustomPopup
+          visible={showWalletPopup}
+          title="Enter Wallet Address to Continue"
+          message="Please enter your wallet address or name to start mining and track your progress."
+          icon="💼"
+          primaryButtonText="OK"
+          onPrimaryPress={() => setShowWalletPopup(false)}
+          onClose={() => setShowWalletPopup(false)}
+          primaryButtonColors={['#9333ea', '#6d28d9', '#2563eb']}
+          type="info"
+        />
       </SafeAreaView>
     </LinearGradient>
   );
