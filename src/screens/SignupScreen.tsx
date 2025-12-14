@@ -78,11 +78,10 @@ export default function SignupScreen({ navigation }: any) {
             {/* Button */}
             <TouchableOpacity onPress={create} activeOpacity={0.8}>
               <LinearGradient
-                colors={['#9333ea', '#2563eb', '#4f46e5']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
+                colors={['#9333ea', '#6d28d9', '#2563eb']}
                 style={styles.button}
               >
+                <View style={styles.cardDecoration} />
                 <Text style={styles.buttonText}>Continue...</Text>
               </LinearGradient>
             </TouchableOpacity>
@@ -217,6 +216,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+    overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.3,
@@ -225,7 +227,17 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 18,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  cardDecoration: {
+    position: 'absolute',
+    top: -32,
+    right: -32,
+    width: 64,
+    height: 64,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 32,
   },
 });
