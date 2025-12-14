@@ -67,13 +67,30 @@ export const claimAdReward = async (req: Request, res: Response) => {
     referral.totalBalance += reward;
     await referral.save();
 
-    // If there's an active mining session, also add reward to the session.totalCoins
-    const session = await MiningSession.findOne({ walletAddress, status: 'mining' }).sort({ createdAt: -1 });
-    let newBalance: number | undefined = referral.totalBalance;
-    if (session) {
-      session.totalCoins += reward;
-      await session.save();
-      newBalance = session.totalCoins;
+    // Update the latest mining session (active or not) to maintain consistency
+    const latestSession = await MiningSession.findOne({ walletAddress }).sort({ createdAt: -1 });
+    let newBalance: number = referral.totalBalance;
+    
+    if (latestSession) {
+      // Update the latest session's totalCoins to include the ad reward
+      latestSession.totalCoins += reward;
+      await latestSession.save();
+      newBalance = latestSession.totalCoins;
+      console.log(`💰 Updated latest session totalCoins: ${latestSession.totalCoins}`);
+    } else {
+      // If no session exists, create a basic one to maintain consistency
+      const newSession = new MiningSession({
+        walletAddress,
+        totalCoins: referral.totalBalance,
+        status: 'inactive',
+        selectedHour: 0,
+        multiplier: 1,
+        miningStartTime: new Date(),
+        createdAt: new Date(),
+      });
+      await newSession.save();
+      newBalance = newSession.totalCoins;
+      console.log(`💰 Created new session with totalCoins: ${newSession.totalCoins}`);
     }
 
     // Create a new entry for this claim
@@ -89,6 +106,7 @@ export const claimAdReward = async (req: Request, res: Response) => {
     console.log(
       `💰 Ad reward claimed: ${walletAddress} earned ${reward} tokens (${newClaimsCount}/${MAX_DAILY_CLAIMS})`,
     );
+    console.log(`📊 New balance: ${newBalance}`);
 
     return res.json({
       success: true,

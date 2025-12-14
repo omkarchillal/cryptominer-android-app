@@ -498,7 +498,10 @@ export const MiningProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const refreshBalance = async () => {
     if (!walletAddress) return;
+    console.log('🔄 Fetching balance for:', walletAddress);
     const res = await api.get(`/api/users/${walletAddress}`);
+    console.log('📊 Balance response:', res.data);
+    console.log('💰 Setting totalBalance to:', res.data.totalBalance ?? 0);
     setTotalBalance(res.data.totalBalance ?? 0);
     setWalletBalance(res.data.walletBalance ?? res.data.totalBalance ?? 0);
 

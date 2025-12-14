@@ -31,8 +31,8 @@ export default function AdRewardScreen({ navigation }: any) {
   const adShownTime = useRef<number | null>(null);
 
   // Navigation guard - prevent navigation when popup is showing
-  const safeNavigate = (route: string) => {
-    if (showRewardPopup && !popupDismissed) {
+  const safeNavigate = (route: string, force: boolean = false) => {
+    if (showRewardPopup && !popupDismissed && !force) {
       console.log('🚫 Navigation blocked - reward popup is showing');
       return;
     }
@@ -67,7 +67,13 @@ export default function AdRewardScreen({ navigation }: any) {
 
           // Refresh balance to show new tokens
           console.log('🔄 Refreshing balance...');
+          console.log('💰 Backend response:', result);
+
+          // Small delay to ensure backend has processed the update
+          await new Promise(resolve => setTimeout(resolve, 500));
+
           await refreshBalance();
+          console.log('✅ Balance refreshed');
 
           console.log(
             `💰 User earned ${result.reward} tokens! (${result.claimedCount}/6 today)`,
@@ -241,10 +247,12 @@ export default function AdRewardScreen({ navigation }: any) {
             setShowRewardPopup(false);
 
             // Refresh balance one more time to ensure it's updated
+            console.log('🔄 Final balance refresh before navigation...');
             await refreshBalance();
+            console.log('✅ Final balance refresh completed');
 
-            // Navigate back to home
-            navigation.navigate('Home');
+            // Navigate back to home using safe navigation (force = true since user clicked Awesome)
+            safeNavigate('Home', true);
           }}
         />
       </SafeAreaView>
