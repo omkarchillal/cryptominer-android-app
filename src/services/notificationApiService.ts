@@ -3,7 +3,7 @@ import { API_BASE_URL } from './api';
 export interface Notification {
   _id: string;
   walletAddress: string;
-  type: 'referral_used' | 'mining_bonus' | 'general';
+  type: 'referral_used' | 'referral_bonus' | 'mining_bonus' | 'general';
   title: string;
   message: string;
   data?: any;

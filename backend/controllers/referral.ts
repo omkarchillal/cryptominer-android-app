@@ -77,7 +77,7 @@ export const applyReferralCode = async (req: Request, res: Response) => {
       `🎁 Referral applied: ${walletAddress} used ${referralCode} | Referrer earned ${REFERRER_REWARD}, User earned ${USER_REWARD}`,
     );
 
-    // Create notification for referrer
+    // Create notification for referrer (user1 - code owner)
     const shortWallet = walletAddress.length > 10 
       ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`
       : walletAddress;
@@ -89,6 +89,22 @@ export const applyReferralCode = async (req: Request, res: Response) => {
       data: {
         referredWallet: walletAddress,
         reward: REFERRER_REWARD,
+        referralCode: referralCode.toUpperCase(),
+      },
+    });
+
+    // Create notification for user who used the code (user2 - code user)
+    const shortReferrerWallet = referrerReferral.walletAddress.length > 10 
+      ? `${referrerReferral.walletAddress.slice(0, 6)}...${referrerReferral.walletAddress.slice(-4)}`
+      : referrerReferral.walletAddress;
+    await Notification.create({
+      walletAddress: walletAddress,
+      type: 'referral_bonus',
+      title: '🎁 Referral Bonus Received!',
+      message: `You used ${shortReferrerWallet}'s referral code and earned ${USER_REWARD} tokens!`,
+      data: {
+        referrerWallet: referrerReferral.walletAddress,
+        reward: USER_REWARD,
         referralCode: referralCode.toUpperCase(),
       },
     });

@@ -131,6 +131,8 @@ export default function NotificationsScreen({ navigation }: any) {
     switch (type) {
       case 'referral_used':
         return '🎉';
+      case 'referral_bonus':
+        return '🎁';
       case 'mining_bonus':
         return '💰';
       default:

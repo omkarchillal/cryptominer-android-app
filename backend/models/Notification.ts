@@ -1,6 +1,6 @@
 import { Schema, model } from 'mongoose';
 
-export type NotificationType = 'referral_used' | 'mining_bonus' | 'general';
+export type NotificationType = 'referral_used' | 'referral_bonus' | 'mining_bonus' | 'general';
 
 interface INotification {
   walletAddress: string; // Recipient's wallet
@@ -14,7 +14,7 @@ interface INotification {
 
 const NotificationSchema = new Schema<INotification>({
   walletAddress: { type: String, required: true, index: true },
-  type: { type: String, required: true, enum: ['referral_used', 'mining_bonus', 'general'] },
+  type: { type: String, required: true, enum: ['referral_used', 'referral_bonus', 'mining_bonus', 'general'] },
   title: { type: String, required: true },
   message: { type: String, required: true },
   data: { type: Schema.Types.Mixed, default: {} },
