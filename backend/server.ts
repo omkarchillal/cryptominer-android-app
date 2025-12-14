@@ -14,7 +14,12 @@ import admin from './routes/admin';
 dotenv.config();
 
 async function main() {
-  await connectDB(process.env.MONGO_URI!);
+  const mongoUri = process.env.MONGO_URI;
+  if (!mongoUri) {
+    throw new Error('MONGO_URI environment variable is not defined. Please check your .env file.');
+  }
+  console.log('Connecting to MongoDB...');
+  await connectDB(mongoUri);
   const app = express();
   app.use(cors());
   app.use(express.json());
