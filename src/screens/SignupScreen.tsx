@@ -5,6 +5,7 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
@@ -16,6 +17,7 @@ export default function SignupScreen({ navigation }: any) {
   const { setWalletAddress, refreshBalance } = useMining();
   const [address, setAddress] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const [showWalletPopup, setShowWalletPopup] = useState(false);
   const [errorPopup, setErrorPopup] = useState({
     visible: false,
@@ -33,6 +35,7 @@ export default function SignupScreen({ navigation }: any) {
       return;
     }
 
+    setLoading(true);
     try {
       await api.post('/api/users/signup', { walletAddress: trimmedAddress });
       await setWalletAddress(trimmedAddress);
@@ -60,6 +63,8 @@ export default function SignupScreen({ navigation }: any) {
         message: errorMessage,
         icon: errorIcon,
       });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -101,13 +106,32 @@ export default function SignupScreen({ navigation }: any) {
             </View>
 
             {/* Button */}
-            <TouchableOpacity onPress={create} activeOpacity={0.8}>
+            <TouchableOpacity
+              onPress={create}
+              activeOpacity={0.8}
+              disabled={loading}
+            >
               <LinearGradient
-                colors={['#9333ea', '#6d28d9', '#2563eb']}
+                colors={
+                  loading
+                    ? ['#6b7280', '#4b5563', '#374151']
+                    : ['#9333ea', '#6d28d9', '#2563eb']
+                }
                 style={styles.button}
               >
                 <View style={styles.cardDecoration} />
-                <Text style={styles.buttonText}>Continue...</Text>
+                <View style={styles.buttonContent}>
+                  {loading && (
+                    <ActivityIndicator
+                      size="small"
+                      color="#fff"
+                      style={styles.loadingIcon}
+                    />
+                  )}
+                  <Text style={styles.buttonText}>
+                    {loading ? 'Logging in...' : 'Continue...'}
+                  </Text>
+                </View>
               </LinearGradient>
             </TouchableOpacity>
           </View>
@@ -280,11 +304,19 @@ const styles = StyleSheet.create({
     shadowRadius: 20,
     elevation: 10,
   },
+  buttonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   buttonText: {
     color: '#fff',
     fontSize: 18,
     fontWeight: '700',
     textAlign: 'center',
+  },
+  loadingIcon: {
+    marginRight: 8,
   },
   cardDecoration: {
     position: 'absolute',
