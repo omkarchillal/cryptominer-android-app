@@ -19,7 +19,9 @@ export default function SignupScreen({ navigation }: any) {
   const [showWalletPopup, setShowWalletPopup] = useState(false);
   const [errorPopup, setErrorPopup] = useState({
     visible: false,
+    title: 'Error',
     message: '',
+    icon: '❌',
   });
 
   const create = async () => {
@@ -37,9 +39,26 @@ export default function SignupScreen({ navigation }: any) {
       await refreshBalance();
       navigation.replace('Home');
     } catch (error: any) {
+      let errorTitle = 'Error';
+      let errorMessage = error.message || 'Failed to create account';
+      let errorIcon = '❌';
+
+      // Check if it's a network error and show user-friendly message
+      if (
+        error.message === 'Network Error' ||
+        error.message?.includes('Network Error')
+      ) {
+        errorTitle = 'Server Starting Up';
+        errorMessage =
+          "We're waking up the server for your request. Initial loading may take a little longer. Please try again after 2–3 minutes if needed.";
+        errorIcon = '🔄';
+      }
+
       setErrorPopup({
         visible: true,
-        message: error.message || 'Failed to create account',
+        title: errorTitle,
+        message: errorMessage,
+        icon: errorIcon,
       });
     }
   };
@@ -109,13 +128,31 @@ export default function SignupScreen({ navigation }: any) {
         {/* Error Popup */}
         <CustomPopup
           visible={errorPopup.visible}
-          title="Error"
+          title={errorPopup.title}
           message={errorPopup.message}
-          icon="❌"
+          icon={errorPopup.icon}
           primaryButtonText="Okay"
-          onPrimaryPress={() => setErrorPopup({ visible: false, message: '' })}
-          onClose={() => setErrorPopup({ visible: false, message: '' })}
-          primaryButtonColors={['#ef4444', '#dc2626', '#b91c1c']}
+          onPrimaryPress={() =>
+            setErrorPopup({
+              visible: false,
+              title: 'Error',
+              message: '',
+              icon: '❌',
+            })
+          }
+          onClose={() =>
+            setErrorPopup({
+              visible: false,
+              title: 'Error',
+              message: '',
+              icon: '❌',
+            })
+          }
+          primaryButtonColors={
+            errorPopup.title === 'Server Starting Up'
+              ? ['#3b82f6', '#2563eb', '#1d4ed8']
+              : ['#ef4444', '#dc2626', '#b91c1c']
+          }
         />
       </SafeAreaView>
     </LinearGradient>
