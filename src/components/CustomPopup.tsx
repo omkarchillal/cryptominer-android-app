@@ -51,12 +51,18 @@ export const CustomPopup: React.FC<CustomPopupProps> = ({
               {secondaryButtonText && onSecondaryPress && (
                 <TouchableOpacity
                   onPress={onSecondaryPress}
-                  style={styles.secondaryButton}
+                  style={styles.secondaryButtonContainer}
                   activeOpacity={0.8}
                 >
-                  <Text style={styles.secondaryButtonText}>
-                    {secondaryButtonText}
-                  </Text>
+                  <LinearGradient
+                    colors={['#6b7280', '#4b5563', '#374151']}
+                    style={styles.secondaryButton}
+                  >
+                    <View style={styles.cardDecoration} />
+                    <Text style={styles.secondaryButtonText}>
+                      {secondaryButtonText}
+                    </Text>
+                  </LinearGradient>
                 </TouchableOpacity>
               )}
 
@@ -72,6 +78,7 @@ export const CustomPopup: React.FC<CustomPopupProps> = ({
                   colors={primaryButtonColors}
                   style={styles.primaryButton}
                 >
+                  <View style={styles.cardDecoration} />
                   <Text style={styles.primaryButtonText}>
                     {primaryButtonText}
                   </Text>
@@ -175,6 +182,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     position: 'relative',
     overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 10,
   },
   primaryButtonFull: {
     flex: 1,
@@ -182,24 +194,40 @@ const styles = StyleSheet.create({
   primaryButtonText: {
     color: '#fff',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
     textAlign: 'center',
   },
-  secondaryButton: {
+  secondaryButtonContainer: {
     flex: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  secondaryButton: {
     borderRadius: 12,
     paddingVertical: 14,
     paddingHorizontal: 20,
     alignItems: 'center',
     justifyContent: 'center',
+    position: 'relative',
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 10,
   },
   secondaryButtonText: {
     color: '#fff',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  cardDecoration: {
+    position: 'absolute',
+    top: -32,
+    right: -32,
+    width: 64,
+    height: 64,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 32,
   },
   closeButton: {
     position: 'absolute',
