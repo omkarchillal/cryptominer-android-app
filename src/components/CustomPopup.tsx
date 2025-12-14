@@ -13,7 +13,6 @@ interface CustomPopupProps {
   onSecondaryPress?: () => void;
   onClose: () => void;
   primaryButtonColors?: string[];
-  type?: 'warning' | 'info' | 'success' | 'error';
 }
 
 export const CustomPopup: React.FC<CustomPopupProps> = ({
@@ -27,21 +26,7 @@ export const CustomPopup: React.FC<CustomPopupProps> = ({
   onSecondaryPress,
   onClose,
   primaryButtonColors = ['#9333ea', '#6d28d9', '#2563eb'],
-  type = 'info',
 }) => {
-  const getTypeColors = () => {
-    switch (type) {
-      case 'warning':
-        return ['#f59e0b', '#d97706', '#b45309'];
-      case 'success':
-        return ['#10b981', '#059669', '#047857'];
-      case 'error':
-        return ['#ef4444', '#dc2626', '#b91c1c'];
-      default:
-        return ['#3b82f6', '#2563eb', '#1d4ed8'];
-    }
-  };
-
   return (
     <Modal visible={visible} transparent animationType="fade">
       <View style={styles.overlay}>
@@ -84,9 +69,11 @@ export const CustomPopup: React.FC<CustomPopupProps> = ({
                   ]}
                 >
                   <View style={styles.cardDecoration} />
-                  <Text style={styles.primaryButtonText}>
-                    {primaryButtonText}
-                  </Text>
+                  <View style={styles.textContainer}>
+                    <Text style={styles.primaryButtonText}>
+                      {primaryButtonText}
+                    </Text>
+                  </View>
                 </LinearGradient>
               </TouchableOpacity>
             </View>
@@ -193,11 +180,24 @@ const styles = StyleSheet.create({
   primaryButtonFull: {
     flex: 1,
   },
+  textContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    zIndex: 20,
+  },
   primaryButtonText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
-    zIndex: 10,
+    textAlign: 'center',
+    width: '100%',
   },
   secondaryButton: {
     flex: 1,
@@ -239,7 +239,8 @@ const styles = StyleSheet.create({
     right: -32,
     width: 64,
     height: 64,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     borderRadius: 32,
+    zIndex: 1,
   },
 });

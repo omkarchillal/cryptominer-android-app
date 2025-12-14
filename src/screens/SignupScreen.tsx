@@ -95,11 +95,10 @@ export default function SignupScreen({ navigation }: any) {
           title="Enter Wallet Address to Continue"
           message="Please enter your wallet address or name to start mining and track your progress."
           icon="💼"
-          primaryButtonText="OK"
+          primaryButtonText="Okay"
           onPrimaryPress={() => setShowWalletPopup(false)}
           onClose={() => setShowWalletPopup(false)}
           primaryButtonColors={['#9333ea', '#6d28d9', '#2563eb']}
-          type="info"
         />
       </SafeAreaView>
     </LinearGradient>

@@ -30,6 +30,16 @@ export default function AdRewardScreen({ navigation }: any) {
   const appState = useRef(AppState.currentState);
   const adShownTime = useRef<number | null>(null);
 
+  // Navigation guard - prevent navigation when popup is showing
+  const safeNavigate = (route: string) => {
+    if (showRewardPopup && !popupDismissed) {
+      console.log('🚫 Navigation blocked - reward popup is showing');
+      return;
+    }
+    console.log(`🧭 Navigating to ${route}`);
+    navigation.navigate(route);
+  };
+
   useEffect(() => {
     // Create and load the ad when component mounts
     rewardedAd = RewardedAd.createForAdRequest(REWARDED_AD_UNIT_ID);
@@ -85,7 +95,7 @@ export default function AdRewardScreen({ navigation }: any) {
             {
               text: 'OK',
               onPress: () => {
-                navigation.navigate('Home');
+                safeNavigate('Home');
               },
             },
           ]);
@@ -113,18 +123,22 @@ export default function AdRewardScreen({ navigation }: any) {
 
           // Set a timeout to navigate back if reward not claimed
           // This handles cases where ad is dismissed quickly
-          setTimeout(() => {
+          const timeoutId = setTimeout(() => {
+            // Only navigate if no reward was claimed and no popup is showing
             if (!rewardClaimed && !showRewardPopup && !popupDismissed) {
               console.log(
                 '⚠️ Ad dismissed without completion, navigating back to Home',
               );
-              navigation.navigate('Home');
-            } else if (showRewardPopup) {
+              safeNavigate('Home');
+            } else {
               console.log(
-                '✅ Reward popup is showing, waiting for user to click Awesome',
+                '✅ Reward claimed or popup showing, staying on screen',
               );
             }
           }, 5000); // Wait 5 seconds after ad is shown
+
+          // Clear timeout if component unmounts
+          return () => clearTimeout(timeoutId);
         })
         .catch(error => {
           console.error('❌ Failed to show ad:', error);
@@ -135,7 +149,7 @@ export default function AdRewardScreen({ navigation }: any) {
               {
                 text: 'OK',
                 onPress: () => {
-                  navigation.navigate('Home');
+                  safeNavigate('Home');
                 },
               },
             ],
@@ -153,8 +167,16 @@ export default function AdRewardScreen({ navigation }: any) {
 
   // Monitor app state to detect when user closes the ad
   useEffect(() => {
+    // Don't monitor app state if popup is showing or has been dismissed
+    if (showRewardPopup || popupDismissed) {
+      console.log(
+        '🎉 Popup is showing or dismissed, skipping app state monitoring',
+      );
+      return;
+    }
+
     const subscription = AppState.addEventListener('change', nextAppState => {
-      // If app comes back to foreground after ad was shown but reward not claimed
+      // Only navigate if no popup is showing and reward not claimed
       if (
         appState.current.match(/inactive|background/) &&
         nextAppState === 'active' &&
@@ -168,7 +190,7 @@ export default function AdRewardScreen({ navigation }: any) {
         if (timeSinceAdShown > 2000) {
           console.log('⚠️ Ad was closed without completion, navigating back');
           setTimeout(() => {
-            navigation.navigate('Home');
+            safeNavigate('Home');
           }, 500);
         }
       }
