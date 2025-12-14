@@ -25,6 +25,7 @@ export const BannerAdComponent: React.FC<BannerAdComponentProps> = ({
         size={size}
         requestOptions={{
           requestNonPersonalizedAdsOnly: false,
+          testDeviceIdentifiers: __DEV__ ? [] : ['YOUR_DEVICE_ID'], // Add your device ID for testing
         }}
         onAdLoaded={() => {
           console.log('✅ Banner ad loaded');

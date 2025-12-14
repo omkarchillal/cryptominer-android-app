@@ -6,6 +6,7 @@ import {
   RewardedAd,
   RewardedAdEventType,
   TestIds,
+  MobileAds,
 } from 'react-native-google-mobile-ads';
 import { useMining } from '../contexts/MiningContext';
 import { adRewardService } from '../services/adRewardService';
@@ -13,7 +14,8 @@ import { adRewardService } from '../services/adRewardService';
 // AdMob Rewarded Ad Unit ID for earning tokens
 const REWARDED_AD_UNIT_ID = __DEV__
   ? TestIds.REWARDED // Test ad for development
-  : 'ca-app-pub-7930332952469106/6559535492'; // Production Ad Unit ID
+  : TestIds.REWARDED; // Temporarily use test ads in production for debugging
+// : 'ca-app-pub-7930332952469106/6559535492'; // Production Ad Unit ID
 
 let rewardedAd: RewardedAd | null = null;
 
@@ -34,6 +36,18 @@ export default function AdRewardScreen({ navigation }: any) {
   };
 
   useEffect(() => {
+    // Initialize Mobile Ads and get device ID for testing
+    MobileAds()
+      .initialize()
+      .then(() => {
+        console.log('📱 Mobile Ads initialized');
+        // Get device ID for testing (remove this in production)
+        if (!__DEV__) {
+          console.log('🔍 Add this device ID to your AdMob test devices:');
+          // The device ID will be shown in logs when you try to load an ad
+        }
+      });
+
     // Create and load the ad when component mounts
     rewardedAd = RewardedAd.createForAdRequest(REWARDED_AD_UNIT_ID);
 
