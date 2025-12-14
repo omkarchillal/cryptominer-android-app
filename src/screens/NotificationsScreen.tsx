@@ -15,6 +15,7 @@ import {
   Notification,
 } from '../services/notificationApiService';
 import { CustomPopup } from '../components/CustomPopup';
+import { CustomRefreshControl } from '../components/CustomRefreshControl';
 
 export default function NotificationsScreen({ navigation }: any) {
   const { walletAddress } = useMining();
@@ -239,10 +240,13 @@ export default function NotificationsScreen({ navigation }: any) {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={handleRefresh}
-              tintColor="#fff"
+              tintColor="transparent"
+              colors={['transparent']}
+              progressBackgroundColor="transparent"
             />
           }
         >
+          <CustomRefreshControl refreshing={refreshing} />
           {loading ? (
             <View style={styles.emptyContainer}>
               <Text style={styles.emptyText}>Loading...</Text>

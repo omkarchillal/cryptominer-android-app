@@ -8,12 +8,14 @@ import {
   Share,
   Clipboard,
   ScrollView,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
 import { useMining } from '../contexts/MiningContext';
 import { referralService } from '../services/referralService';
 import { CustomPopup } from '../components/CustomPopup';
+import { CustomRefreshControl } from '../components/CustomRefreshControl';
 
 export default function ReferralScreen({ navigation }: any) {
   const { walletAddress, refreshBalance } = useMining();
@@ -28,6 +30,7 @@ export default function ReferralScreen({ navigation }: any) {
     usedReferralCode: '',
   });
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [popup, setPopup] = useState({
     visible: false,
     title: '',
@@ -58,6 +61,18 @@ export default function ReferralScreen({ navigation }: any) {
     }
   };
 
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await fetchReferralStats();
+      await refreshBalance();
+    } catch (error) {
+      console.error('Error refreshing referral screen:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   const handleCopyCode = () => {
     Clipboard.setString(referralCode);
     setPopup({
@@ -73,7 +88,7 @@ export default function ReferralScreen({ navigation }: any) {
   const handleShareCode = async () => {
     try {
       await Share.share({
-        message: `Join me on Crypto Miner! Use my referral code ${referralCode} to get 100 tokens bonus! 🎁`,
+        message: `Join me on Crypto Miner! Download the app from this drive - https://drive.google.com/drive/folders/1asWGPZYjJayVqHHFTsTBZO_2tG7Vj4Uo?usp=sharing. Use my referral code ${referralCode} to get 100 tokens bonus! 🎁`,
       });
     } catch (error) {
       console.error('Error sharing:', error);
@@ -142,7 +157,17 @@ export default function ReferralScreen({ navigation }: any) {
         <ScrollView
           style={styles.scrollView}
           contentContainerStyle={styles.content}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor="transparent"
+              colors={['transparent']}
+              progressBackgroundColor="transparent"
+            />
+          }
         >
+          <CustomRefreshControl refreshing={refreshing} />
           {/* Back Button */}
           <TouchableOpacity
             onPress={() => navigation.goBack()}

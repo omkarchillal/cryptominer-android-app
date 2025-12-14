@@ -5,6 +5,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
@@ -15,6 +16,7 @@ import { BannerAdComponent } from '../components/BannerAd';
 import { NotificationIcon } from '../components/NotificationIcon';
 import { RewardEarnedPopup } from '../components/RewardEarnedPopup';
 import { CustomPopup } from '../components/CustomPopup';
+import { CustomRefreshControl } from '../components/CustomRefreshControl';
 
 export default function HomeScreen({ navigation }: any) {
   const {
@@ -52,6 +54,7 @@ export default function HomeScreen({ navigation }: any) {
     canClaim: true,
   });
   const [notificationKey, setNotificationKey] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
 
   const isMining = miningStatus === 'active';
   const canClaim = hasUnclaimedRewards;
@@ -97,6 +100,19 @@ export default function HomeScreen({ navigation }: any) {
     navigation.navigate('AdReward');
   };
 
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await refreshBalance();
+      await fetchAdRewardStatus();
+      setNotificationKey(prev => prev + 1); // Force notification icon to refresh
+    } catch (error) {
+      console.error('Error refreshing HomeScreen:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   // Refresh ad status, balance, and notifications when returning to this screen
   React.useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
@@ -131,7 +147,17 @@ export default function HomeScreen({ navigation }: any) {
         <ScrollView
           style={styles.scrollView}
           contentContainerStyle={styles.content}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor="transparent"
+              colors={['transparent']}
+              progressBackgroundColor="transparent"
+            />
+          }
         >
+          <CustomRefreshControl refreshing={refreshing} />
           {/* Header */}
           <View style={styles.header}>
             {/* Top Buttons Row - Leaderboard, Notifications, and Logout */}

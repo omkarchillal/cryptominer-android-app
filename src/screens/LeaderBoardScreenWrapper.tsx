@@ -6,11 +6,13 @@ import {
   FlatList,
   TouchableOpacity,
   ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
 import { useMining } from '../contexts/MiningContext';
 import { api } from '../services/api';
+import { CustomRefreshControl } from '../components/CustomRefreshControl';
 
 type User = {
   id: string;
@@ -23,6 +25,7 @@ export default function LeaderBoardScreenWrapper({ navigation }: any) {
   const { walletAddress } = useMining();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     fetchLeaderboard();
@@ -62,6 +65,17 @@ export default function LeaderBoardScreenWrapper({ navigation }: any) {
       setUsers([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await fetchLeaderboard();
+    } catch (error) {
+      console.error('Error refreshing leaderboard:', error);
+    } finally {
+      setRefreshing(false);
     }
   };
 
@@ -214,8 +228,23 @@ export default function LeaderBoardScreenWrapper({ navigation }: any) {
           </View>
         ) : (
           <FlatList
+            data={restUsers}
+            renderItem={renderItem}
+            keyExtractor={item => item.id}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={handleRefresh}
+                tintColor="transparent"
+                colors={['transparent']}
+                progressBackgroundColor="transparent"
+              />
+            }
             ListHeaderComponent={
               <>
+                <CustomRefreshControl refreshing={refreshing} />
                 {/* Top 3 Podium */}
                 {renderTopMiners()}
 
@@ -227,11 +256,6 @@ export default function LeaderBoardScreenWrapper({ navigation }: any) {
                 )}
               </>
             }
-            data={restUsers}
-            renderItem={renderItem}
-            keyExtractor={item => item.id}
-            contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={false}
             ListEmptyComponent={
               restUsers.length === 0 && users.length <= 3 ? (
                 <View style={styles.noMoreUsers}>
