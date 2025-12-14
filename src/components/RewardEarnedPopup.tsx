@@ -14,7 +14,15 @@ export const RewardEarnedPopup: React.FC<RewardEarnedPopupProps> = ({
   onClose,
 }) => {
   return (
-    <Modal visible={visible} transparent animationType="fade">
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      onRequestClose={() => {
+        // Prevent dismissing with back button on Android
+        // User must click "Awesome" button
+      }}
+    >
       <View style={styles.overlay}>
         <View style={styles.modalContainer}>
           <LinearGradient
@@ -72,7 +80,7 @@ export const RewardEarnedPopup: React.FC<RewardEarnedPopupProps> = ({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 16,

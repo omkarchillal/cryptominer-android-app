@@ -26,6 +26,7 @@ export default function AdRewardScreen({ navigation }: any) {
   const [rewardClaimed, setRewardClaimed] = useState(false);
   const [showRewardPopup, setShowRewardPopup] = useState(false);
   const [earnedTokens, setEarnedTokens] = useState(0);
+  const [popupDismissed, setPopupDismissed] = useState(false);
   const appState = useRef(AppState.currentState);
   const adShownTime = useRef<number | null>(null);
 
@@ -51,16 +52,19 @@ export default function AdRewardScreen({ navigation }: any) {
 
         try {
           // Claim the ad reward from backend
+          console.log('🔄 Claiming ad reward from backend...');
           const result = await adRewardService.claimReward(walletAddress);
 
-          // Refresh balance
+          // Refresh balance to show new tokens
+          console.log('🔄 Refreshing balance...');
           await refreshBalance();
 
           console.log(
             `💰 User earned ${result.reward} tokens! (${result.claimedCount}/6 today)`,
           );
 
-          // Show custom reward popup
+          // Show custom reward popup - this should stay visible until "Awesome" is clicked
+          console.log('🎉 Showing reward popup...');
           setEarnedTokens(result.reward);
           setShowRewardPopup(true);
         } catch (error: any) {
@@ -110,9 +114,15 @@ export default function AdRewardScreen({ navigation }: any) {
           // Set a timeout to navigate back if reward not claimed
           // This handles cases where ad is dismissed quickly
           setTimeout(() => {
-            if (!rewardClaimed) {
-              console.log('⚠️ Ad dismissed, navigating back to Home');
+            if (!rewardClaimed && !showRewardPopup && !popupDismissed) {
+              console.log(
+                '⚠️ Ad dismissed without completion, navigating back to Home',
+              );
               navigation.navigate('Home');
+            } else if (showRewardPopup) {
+              console.log(
+                '✅ Reward popup is showing, waiting for user to click Awesome',
+              );
             }
           }, 5000); // Wait 5 seconds after ad is shown
         })
@@ -132,7 +142,14 @@ export default function AdRewardScreen({ navigation }: any) {
           );
         });
     }
-  }, [adLoaded, adShown, rewardClaimed, navigation]);
+  }, [
+    adLoaded,
+    adShown,
+    rewardClaimed,
+    navigation,
+    showRewardPopup,
+    popupDismissed,
+  ]);
 
   // Monitor app state to detect when user closes the ad
   useEffect(() => {
@@ -142,7 +159,9 @@ export default function AdRewardScreen({ navigation }: any) {
         appState.current.match(/inactive|background/) &&
         nextAppState === 'active' &&
         adShownTime.current &&
-        !rewardClaimed
+        !rewardClaimed &&
+        !showRewardPopup &&
+        !popupDismissed
       ) {
         const timeSinceAdShown = Date.now() - adShownTime.current;
         // If more than 2 seconds passed, assume ad was closed
@@ -159,7 +178,7 @@ export default function AdRewardScreen({ navigation }: any) {
     return () => {
       subscription.remove();
     };
-  }, [rewardClaimed, navigation]);
+  }, [rewardClaimed, navigation, showRewardPopup, popupDismissed]);
 
   return (
     <LinearGradient
@@ -194,8 +213,15 @@ export default function AdRewardScreen({ navigation }: any) {
         <RewardEarnedPopup
           visible={showRewardPopup}
           tokensEarned={earnedTokens}
-          onClose={() => {
+          onClose={async () => {
+            console.log('🎉 User clicked Awesome button, closing popup');
+            setPopupDismissed(true);
             setShowRewardPopup(false);
+
+            // Refresh balance one more time to ensure it's updated
+            await refreshBalance();
+
+            // Navigate back to home
             navigation.navigate('Home');
           }}
         />
