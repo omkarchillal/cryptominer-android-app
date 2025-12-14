@@ -5,7 +5,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   TextInput,
-  Alert,
   Share,
   Clipboard,
   ScrollView,
@@ -14,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
 import { useMining } from '../contexts/MiningContext';
 import { referralService } from '../services/referralService';
+import { CustomPopup } from '../components/CustomPopup';
 
 export default function ReferralScreen({ navigation }: any) {
   const { walletAddress, refreshBalance } = useMining();
@@ -28,6 +28,14 @@ export default function ReferralScreen({ navigation }: any) {
     usedReferralCode: '',
   });
   const [loading, setLoading] = useState(false);
+  const [popup, setPopup] = useState({
+    visible: false,
+    title: '',
+    message: '',
+    icon: '',
+    primaryButtonText: 'Okay',
+    onPrimaryPress: () => setPopup(prev => ({ ...prev, visible: false })),
+  });
 
   useEffect(() => {
     fetchReferralStats();
@@ -52,7 +60,14 @@ export default function ReferralScreen({ navigation }: any) {
 
   const handleCopyCode = () => {
     Clipboard.setString(referralCode);
-    Alert.alert('Copied!', 'Your referral code has been copied to clipboard');
+    setPopup({
+      visible: true,
+      title: 'Copied!',
+      message: 'Your referral code has been copied to clipboard',
+      icon: '📋',
+      primaryButtonText: 'Okay',
+      onPrimaryPress: () => setPopup(prev => ({ ...prev, visible: false })),
+    });
   };
 
   const handleShareCode = async () => {
@@ -67,7 +82,14 @@ export default function ReferralScreen({ navigation }: any) {
 
   const handleApplyCode = async () => {
     if (!inputCode.trim()) {
-      Alert.alert('Error', 'Please enter a referral code');
+      setPopup({
+        visible: true,
+        title: 'Error',
+        message: 'Please enter a referral code',
+        icon: '⚠️',
+        primaryButtonText: 'Okay',
+        onPrimaryPress: () => setPopup(prev => ({ ...prev, visible: false })),
+      });
       return;
     }
 
@@ -81,17 +103,27 @@ export default function ReferralScreen({ navigation }: any) {
       await refreshBalance();
       await fetchReferralStats();
 
-      Alert.alert('Success! 🎉', result.message, [
-        {
-          text: 'OK',
-          onPress: () => {
-            setInputCode('');
-            navigation.goBack();
-          },
+      setPopup({
+        visible: true,
+        title: 'Success! 🎉',
+        message: result.message,
+        icon: '🎉',
+        primaryButtonText: 'Okay',
+        onPrimaryPress: () => {
+          setPopup(prev => ({ ...prev, visible: false }));
+          setInputCode('');
+          navigation.goBack();
         },
-      ]);
+      });
     } catch (error: any) {
-      Alert.alert('Error', error.message);
+      setPopup({
+        visible: true,
+        title: 'Error',
+        message: error.message,
+        icon: '❌',
+        primaryButtonText: 'Okay',
+        onPrimaryPress: () => setPopup(prev => ({ ...prev, visible: false })),
+      });
     } finally {
       setLoading(false);
     }
@@ -256,6 +288,16 @@ export default function ReferralScreen({ navigation }: any) {
           )}
         </ScrollView>
       </SafeAreaView>
+
+      <CustomPopup
+        visible={popup.visible}
+        title={popup.title}
+        message={popup.message}
+        icon={popup.icon}
+        primaryButtonText={popup.primaryButtonText}
+        onPrimaryPress={popup.onPrimaryPress}
+        onClose={() => setPopup(prev => ({ ...prev, visible: false }))}
+      />
     </LinearGradient>
   );
 }
