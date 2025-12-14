@@ -47,7 +47,7 @@ export const RewardEarnedPopup: React.FC<RewardEarnedPopupProps> = ({
               colors={['#10b981', '#059669', '#047857']}
               style={styles.rewardCard}
             >
-              <View style={styles.cardDecoration} />
+              <View style={styles.cardDecorationsmall} />
               <View style={styles.rewardInfo}>
                 <Text style={styles.rewardIcon}>💰</Text>
                 <Text style={styles.rewardValue}>+{tokensEarned}</Text>
@@ -204,11 +204,20 @@ const styles = StyleSheet.create({
   },
   cardDecoration: {
     position: 'absolute',
-    top: -32,
-    right: -32,
-    width: 64,
-    height: 64,
+    top: -64,
+    right: -64,
+    width: 128,
+    height: 128,
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 32,
+    borderRadius: 64,
+  },
+  cardDecorationsmall: {
+    position: 'absolute',
+    top: -72,
+    right: -72,
+    width: 174,
+    height: 174,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: '50%',
   },
 });
