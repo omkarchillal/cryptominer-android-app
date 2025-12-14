@@ -60,20 +60,21 @@ export const CustomPopup: React.FC<CustomPopupProps> = ({
                 </TouchableOpacity>
               )}
 
-              <TouchableOpacity onPress={onPrimaryPress} activeOpacity={0.8}>
+              <TouchableOpacity
+                onPress={onPrimaryPress}
+                activeOpacity={0.8}
+                style={[
+                  styles.primaryButtonContainer,
+                  !secondaryButtonText && styles.primaryButtonFull,
+                ]}
+              >
                 <LinearGradient
                   colors={primaryButtonColors}
-                  style={[
-                    styles.primaryButton,
-                    !secondaryButtonText && styles.primaryButtonFull,
-                  ]}
+                  style={styles.primaryButton}
                 >
-                  <View style={styles.cardDecoration} />
-                  <View style={styles.textContainer}>
-                    <Text style={styles.primaryButtonText}>
-                      {primaryButtonText}
-                    </Text>
-                  </View>
+                  <Text style={styles.primaryButtonText}>
+                    {primaryButtonText}
+                  </Text>
                 </LinearGradient>
               </TouchableOpacity>
             </View>
@@ -163,41 +164,26 @@ const styles = StyleSheet.create({
     gap: 12,
     zIndex: 10,
   },
-  primaryButton: {
+  primaryButtonContainer: {
     flex: 1,
+  },
+  primaryButton: {
     borderRadius: 12,
     paddingVertical: 14,
     paddingHorizontal: 20,
     alignItems: 'center',
+    justifyContent: 'center',
     position: 'relative',
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.3,
-    shadowRadius: 20,
-    elevation: 10,
   },
   primaryButtonFull: {
     flex: 1,
-  },
-  textContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    zIndex: 20,
   },
   primaryButtonText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
     textAlign: 'center',
-    width: '100%',
   },
   secondaryButton: {
     flex: 1,
@@ -208,6 +194,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 20,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   secondaryButtonText: {
     color: '#fff',
@@ -232,15 +219,5 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
-  },
-  cardDecoration: {
-    position: 'absolute',
-    top: -32,
-    right: -32,
-    width: 64,
-    height: 64,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: 32,
-    zIndex: 1,
   },
 });
