@@ -92,6 +92,43 @@ export default function NotificationsScreen({ navigation }: any) {
     }
   };
 
+  const handleClearAllNotifications = async () => {
+    try {
+      await notificationApiService.clearAllNotifications(walletAddress);
+      setNotifications([]);
+      setUnreadCount(0);
+    } catch (error) {
+      console.error('Failed to clear all notifications:', error);
+      setPopup({
+        visible: true,
+        title: 'Error',
+        message: 'Failed to clear all notifications',
+        icon: '❌',
+        primaryButtonText: 'Okay',
+        secondaryButtonText: '',
+        onPrimaryPress: () => setPopup(prev => ({ ...prev, visible: false })),
+        onSecondaryPress: undefined,
+      });
+    }
+  };
+
+  const showClearConfirmation = () => {
+    setPopup({
+      visible: true,
+      title: 'Clear All Notifications',
+      message:
+        'Are you sure you want to clear all notifications? This action cannot be undone.',
+      icon: '🗑️',
+      primaryButtonText: 'Clear All',
+      secondaryButtonText: 'Cancel',
+      onPrimaryPress: () => {
+        setPopup(prev => ({ ...prev, visible: false }));
+        handleClearAllNotifications();
+      },
+      onSecondaryPress: () => setPopup(prev => ({ ...prev, visible: false })),
+    });
+  };
+
   const handleDelete = async (notificationId: string) => {
     try {
       await notificationApiService.deleteNotification(notificationId);
@@ -174,14 +211,24 @@ export default function NotificationsScreen({ navigation }: any) {
             <Text style={styles.backButtonText}>← Back</Text>
           </TouchableOpacity>
           <Text style={styles.title}>Notifications</Text>
-          {unreadCount > 0 && (
-            <TouchableOpacity
-              onPress={handleMarkAllAsRead}
-              style={styles.markAllButton}
-            >
-              <Text style={styles.markAllButtonText}>Mark all read</Text>
-            </TouchableOpacity>
-          )}
+          <View style={styles.headerButtons}>
+            {unreadCount > 0 && (
+              <TouchableOpacity
+                onPress={handleMarkAllAsRead}
+                style={styles.markAllButton}
+              >
+                <Text style={styles.markAllButtonText}>Mark all read</Text>
+              </TouchableOpacity>
+            )}
+            {notifications.length > 0 && (
+              <TouchableOpacity
+                onPress={showClearConfirmation}
+                style={styles.clearButton}
+              >
+                <Text style={styles.clearButtonText}>Clear All</Text>
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
 
         {/* Notifications List */}
@@ -337,6 +384,21 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   markAllButtonText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  headerButtons: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  clearButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: 'rgba(239, 68, 68, 0.3)',
+    borderRadius: 8,
+  },
+  clearButtonText: {
     color: '#fff',
     fontSize: 12,
     fontWeight: '600',

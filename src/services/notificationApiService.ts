@@ -88,6 +88,25 @@ class NotificationApiService {
       throw error;
     }
   }
+
+  async clearAllNotifications(walletAddress: string): Promise<void> {
+    try {
+      const response = await fetch(`${this.baseUrl}/clear-all`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ walletAddress }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to clear all notifications: ${response.statusText}`);
+      }
+    } catch (error) {
+      console.error('Error clearing all notifications:', error);
+      throw error;
+    }
+  }
 }
 
 export const notificationApiService = new NotificationApiService();

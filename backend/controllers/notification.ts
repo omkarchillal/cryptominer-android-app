@@ -104,3 +104,24 @@ export const deleteNotification = async (req: Request, res: Response) => {
     return res.status(500).json({ error: 'Failed to delete notification' });
   }
 };
+
+// Clear all notifications for a user
+export const clearAllNotifications = async (req: Request, res: Response) => {
+  try {
+    const { walletAddress } = req.body;
+
+    if (!walletAddress) {
+      return res.status(400).json({ error: 'Wallet address required' });
+    }
+
+    const result = await Notification.deleteMany({ walletAddress });
+
+    return res.json({ 
+      success: true, 
+      deletedCount: result.deletedCount 
+    });
+  } catch (error) {
+    console.error('Error clearing all notifications:', error);
+    return res.status(500).json({ error: 'Failed to clear all notifications' });
+  }
+};
