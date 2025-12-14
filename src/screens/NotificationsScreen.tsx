@@ -161,6 +161,10 @@ export default function NotificationsScreen({ navigation }: any) {
       style={styles.gradientContainer}
     >
       <SafeAreaView style={styles.safeArea}>
+        {/* Animated background elements */}
+        <View style={styles.bgCircle1} />
+        <View style={styles.bgCircle2} />
+
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity
@@ -277,6 +281,24 @@ const styles = StyleSheet.create({
   },
   safeArea: {
     flex: 1,
+  },
+  bgCircle1: {
+    position: 'absolute',
+    top: '25%',
+    left: '25%',
+    width: 384,
+    height: 384,
+    backgroundColor: 'rgba(168, 85, 247, 0.2)',
+    borderRadius: 192,
+  },
+  bgCircle2: {
+    position: 'absolute',
+    bottom: '25%',
+    right: '25%',
+    width: 384,
+    height: 384,
+    backgroundColor: 'rgba(59, 130, 246, 0.2)',
+    borderRadius: 192,
   },
   header: {
     flexDirection: 'row',
