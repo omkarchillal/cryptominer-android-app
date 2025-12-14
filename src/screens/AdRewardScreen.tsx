@@ -9,7 +9,6 @@ import {
 } from 'react-native-google-mobile-ads';
 import { useMining } from '../contexts/MiningContext';
 import { adRewardService } from '../services/adRewardService';
-import { RewardEarnedPopup } from '../components/RewardEarnedPopup';
 
 // AdMob Rewarded Ad Unit ID for earning tokens
 const REWARDED_AD_UNIT_ID = __DEV__
@@ -19,23 +18,17 @@ const REWARDED_AD_UNIT_ID = __DEV__
 let rewardedAd: RewardedAd | null = null;
 
 export default function AdRewardScreen({ navigation }: any) {
-  const { walletAddress, refreshBalance } = useMining();
+  const { walletAddress, refreshBalance, setAdRewardPopup } = useMining();
   const [adLoaded, setAdLoaded] = useState(false);
   const [adShown, setAdShown] = useState(false);
   const [loading, setLoading] = useState(true);
   const [rewardClaimed, setRewardClaimed] = useState(false);
-  const [showRewardPopup, setShowRewardPopup] = useState(false);
-  const [earnedTokens, setEarnedTokens] = useState(0);
   const [popupDismissed, setPopupDismissed] = useState(false);
   const appState = useRef(AppState.currentState);
   const adShownTime = useRef<number | null>(null);
 
-  // Navigation guard - prevent navigation when popup is showing
-  const safeNavigate = (route: string, force: boolean = false) => {
-    if (showRewardPopup && !popupDismissed && !force) {
-      console.log('🚫 Navigation blocked - reward popup is showing');
-      return;
-    }
+  // Navigation guard - simplified since popup will be on HomeScreen
+  const safeNavigate = (route: string) => {
     console.log(`🧭 Navigating to ${route}`);
     navigation.navigate(route);
   };
@@ -79,10 +72,13 @@ export default function AdRewardScreen({ navigation }: any) {
             `💰 User earned ${result.reward} tokens! (${result.claimedCount}/6 today)`,
           );
 
-          // Show custom reward popup - this should stay visible until "Awesome" is clicked
-          console.log('🎉 Showing reward popup...');
-          setEarnedTokens(result.reward);
-          setShowRewardPopup(true);
+          // Store reward info and navigate to HomeScreen to show popup there
+          console.log('🎉 Setting reward popup for HomeScreen...');
+          setAdRewardPopup(true, result.reward);
+
+          // Navigate back to HomeScreen immediately
+          console.log('🧭 Navigating to HomeScreen to show reward popup');
+          navigation.navigate('Home');
         } catch (error: any) {
           console.error('❌ Failed to claim ad reward:', error);
 
@@ -92,10 +88,21 @@ export default function AdRewardScreen({ navigation }: any) {
             error.message?.includes('Network') ||
             error.message?.includes('Request failed');
 
-          const errorTitle = isBackendError ? 'Backend Not Available' : 'Error';
-          const errorMessage = isBackendError
-            ? 'The backend server is not running. Please restart the backend server and try again.\n\nSee RESTART_BACKEND.md for instructions.'
-            : error.message || 'Failed to claim reward. Please try again.';
+          const isServerError = error.message?.includes('500');
+
+          let errorTitle = 'Error';
+          let errorMessage =
+            error.message || 'Failed to claim reward. Please try again.';
+
+          if (isBackendError) {
+            errorTitle = 'Backend Not Available';
+            errorMessage =
+              'The backend server is not running. Please restart the backend server and try again.\n\nSee RESTART_BACKEND.md for instructions.';
+          } else if (isServerError) {
+            errorTitle = 'Server Error';
+            errorMessage =
+              'There was an issue processing your reward. Please try again in a moment.';
+          }
 
           Alert.alert(errorTitle, errorMessage, [
             {
@@ -130,8 +137,8 @@ export default function AdRewardScreen({ navigation }: any) {
           // Set a timeout to navigate back if reward not claimed
           // This handles cases where ad is dismissed quickly
           const timeoutId = setTimeout(() => {
-            // Only navigate if no reward was claimed and no popup is showing
-            if (!rewardClaimed && !showRewardPopup && !popupDismissed) {
+            // Only navigate if no reward was claimed
+            if (!rewardClaimed && !popupDismissed) {
               console.log(
                 '⚠️ Ad dismissed without completion, navigating back to Home',
               );
@@ -162,22 +169,13 @@ export default function AdRewardScreen({ navigation }: any) {
           );
         });
     }
-  }, [
-    adLoaded,
-    adShown,
-    rewardClaimed,
-    navigation,
-    showRewardPopup,
-    popupDismissed,
-  ]);
+  }, [adLoaded, adShown, rewardClaimed, navigation, popupDismissed]);
 
   // Monitor app state to detect when user closes the ad
   useEffect(() => {
-    // Don't monitor app state if popup is showing or has been dismissed
-    if (showRewardPopup || popupDismissed) {
-      console.log(
-        '🎉 Popup is showing or dismissed, skipping app state monitoring',
-      );
+    // Don't monitor app state if popup has been dismissed
+    if (popupDismissed) {
+      console.log('🎉 Popup dismissed, skipping app state monitoring');
       return;
     }
 
@@ -188,7 +186,6 @@ export default function AdRewardScreen({ navigation }: any) {
         nextAppState === 'active' &&
         adShownTime.current &&
         !rewardClaimed &&
-        !showRewardPopup &&
         !popupDismissed
       ) {
         const timeSinceAdShown = Date.now() - adShownTime.current;
@@ -206,7 +203,7 @@ export default function AdRewardScreen({ navigation }: any) {
     return () => {
       subscription.remove();
     };
-  }, [rewardClaimed, navigation, showRewardPopup, popupDismissed]);
+  }, [rewardClaimed, navigation, popupDismissed]);
 
   return (
     <LinearGradient
@@ -236,25 +233,6 @@ export default function AdRewardScreen({ navigation }: any) {
             </View>
           )}
         </View>
-
-        {/* Custom Reward Earned Popup */}
-        <RewardEarnedPopup
-          visible={showRewardPopup}
-          tokensEarned={earnedTokens}
-          onClose={async () => {
-            console.log('🎉 User clicked Awesome button, closing popup');
-            setPopupDismissed(true);
-            setShowRewardPopup(false);
-
-            // Refresh balance one more time to ensure it's updated
-            console.log('🔄 Final balance refresh before navigation...');
-            await refreshBalance();
-            console.log('✅ Final balance refresh completed');
-
-            // Navigate back to home using safe navigation (force = true since user clicked Awesome)
-            safeNavigate('Home', true);
-          }}
-        />
       </SafeAreaView>
     </LinearGradient>
   );

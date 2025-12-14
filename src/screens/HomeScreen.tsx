@@ -14,6 +14,7 @@ import { useMining } from '../contexts/MiningContext';
 import { DurationPopup } from '../components/DurationPopup';
 import { BannerAdComponent } from '../components/BannerAd';
 import { NotificationIcon } from '../components/NotificationIcon';
+import { RewardEarnedPopup } from '../components/RewardEarnedPopup';
 
 export default function HomeScreen({ navigation }: any) {
   const {
@@ -28,6 +29,9 @@ export default function HomeScreen({ navigation }: any) {
     hasUnclaimedRewards,
     config,
     configLoading,
+    showAdRewardPopup,
+    adRewardTokens,
+    setAdRewardPopup,
   } = useMining();
   const [popup, setPopup] = useState(false);
 
@@ -93,11 +97,16 @@ export default function HomeScreen({ navigation }: any) {
         fetchAdRewardStatus();
         refreshBalance(); // Refresh balance to show new referral bonuses
         setNotificationKey(prev => prev + 1); // Force notification icon to refresh
+
+        // Check if we should show the ad reward popup
+        if (showAdRewardPopup) {
+          console.log('🎉 HomeScreen focused with ad reward popup to show');
+        }
       }
     });
 
     return unsubscribe;
-  }, [navigation, walletAddress]);
+  }, [navigation, walletAddress, showAdRewardPopup]);
 
   return (
     <LinearGradient
@@ -411,6 +420,23 @@ export default function HomeScreen({ navigation }: any) {
                 ],
               );
             }
+          }}
+        />
+
+        {/* Ad Reward Earned Popup */}
+        <RewardEarnedPopup
+          visible={showAdRewardPopup}
+          tokensEarned={adRewardTokens}
+          onClose={async () => {
+            console.log('🎉 User clicked Awesome button on HomeScreen');
+
+            // Refresh balance one more time to ensure it's updated
+            console.log('🔄 Final balance refresh on HomeScreen...');
+            await refreshBalance();
+            console.log('✅ Final balance refresh completed on HomeScreen');
+
+            // Close the popup
+            setAdRewardPopup(false);
           }}
         />
       </SafeAreaView>

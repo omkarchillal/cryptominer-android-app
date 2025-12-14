@@ -48,6 +48,10 @@ interface MiningContextType {
   configLoading: boolean;
   startMining: (durationSeconds: number) => Promise<void>;
   stopMining: () => Promise<void>;
+  // Ad reward popup state
+  showAdRewardPopup: boolean;
+  adRewardTokens: number;
+  setAdRewardPopup: (show: boolean, tokens?: number) => void;
   upgradeMultiplier: () => Promise<void>;
   claimRewards: () => Promise<number>;
   logout: () => Promise<void>;
@@ -89,6 +93,10 @@ export const MiningProvider: React.FC<{ children: React.ReactNode }> = ({
     baseRate: 0.01,
   });
   const [configLoading, setConfigLoading] = useState(true);
+
+  // Ad reward popup state
+  const [showAdRewardPopup, setShowAdRewardPopup] = useState(false);
+  const [adRewardTokens, setAdRewardTokens] = useState(0);
 
   // Wrapper to persist wallet address when set
   const setWalletAddress = async (addr: string) => {
@@ -624,6 +632,12 @@ export const MiningProvider: React.FC<{ children: React.ReactNode }> = ({
     return awarded as number;
   };
 
+  const setAdRewardPopup = (show: boolean, tokens: number = 0) => {
+    console.log(`🎉 Setting ad reward popup: ${show}, tokens: ${tokens}`);
+    setShowAdRewardPopup(show);
+    setAdRewardTokens(tokens);
+  };
+
   const logout = async () => {
     console.log('🚪 Logging out...');
 
@@ -641,6 +655,10 @@ export const MiningProvider: React.FC<{ children: React.ReactNode }> = ({
     setRemainingSeconds(0);
     setLiveTokens(0);
     setHasUnclaimedRewards(false);
+
+    // Clear ad reward popup state
+    setShowAdRewardPopup(false);
+    setAdRewardTokens(0);
 
     // Clear AsyncStorage
     await AsyncStorage.removeItem(STORAGE_KEY);
@@ -691,6 +709,10 @@ export const MiningProvider: React.FC<{ children: React.ReactNode }> = ({
     upgradeMultiplier,
     claimRewards,
     logout,
+    // Ad reward popup
+    showAdRewardPopup,
+    adRewardTokens,
+    setAdRewardPopup,
   };
 
   return (

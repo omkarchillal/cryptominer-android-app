@@ -58,18 +58,53 @@ export const claimAdReward = async (req: Request, res: Response) => {
     const reward = getRandomReward();
 
     // Ensure referral record is present (created during signup)
-    const referral = await Referral.findOne({ walletAddress });
+    console.log(`🔍 Looking for referral record for: ${walletAddress}`);
+    let referral = await Referral.findOne({ walletAddress });
     if (!referral) {
-      return res.status(404).json({ error: 'Referral record not found' });
+      console.log(`❌ Referral record not found for: ${walletAddress}, creating one...`);
+      
+      // Generate unique referral code
+      const generateReferralCode = (): string => {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        let code = '';
+        for (let i = 0; i < 8; i++) {
+          code += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return code;
+      };
+
+      let referralCode = generateReferralCode();
+      let codeExists = await Referral.findOne({ referralCode });
+
+      // Ensure code is unique
+      while (codeExists) {
+        referralCode = generateReferralCode();
+        codeExists = await Referral.findOne({ referralCode });
+      }
+
+      // Create referral record
+      referral = await Referral.create({
+        walletAddress,
+        referralCode,
+        totalBalance: 0,
+        totalReferrals: 0,
+        hasUsedReferralCode: false,
+        totalReferralPoints: 0,
+      });
+      
+      console.log(`✅ Created referral record with code: ${referralCode}`);
     }
+    console.log(`✅ Found referral record with balance: ${referral.totalBalance}`);
 
     // Update referral totalBalance (keep referral metrics and source-of-truth consistent)
     referral.totalBalance += reward;
     await referral.save();
 
     // Update the latest mining session (active or not) to maintain consistency
+    console.log(`🔍 Looking for latest mining session for: ${walletAddress}`);
     const latestSession = await MiningSession.findOne({ walletAddress }).sort({ createdAt: -1 });
     let newBalance: number = referral.totalBalance;
+    console.log(`📊 Latest session found:`, latestSession ? 'Yes' : 'No');
     
     if (latestSession) {
       // Update the latest session's totalCoins to include the ad reward
@@ -79,14 +114,15 @@ export const claimAdReward = async (req: Request, res: Response) => {
       console.log(`💰 Updated latest session totalCoins: ${latestSession.totalCoins}`);
     } else {
       // If no session exists, create a basic one to maintain consistency
+      const now = new Date();
       const newSession = new MiningSession({
         walletAddress,
         totalCoins: referral.totalBalance,
-        status: 'inactive',
+        status: 'claimed', // Use 'claimed' instead of 'inactive' as per enum
         selectedHour: 0,
         multiplier: 1,
-        miningStartTime: new Date(),
-        createdAt: new Date(),
+        miningStartTime: now,
+        multiplierStartTime: now, // Required field
       });
       await newSession.save();
       newBalance = newSession.totalCoins;
@@ -115,9 +151,14 @@ export const claimAdReward = async (req: Request, res: Response) => {
       claimedCount: newClaimsCount,
       remainingClaims: MAX_DAILY_CLAIMS - newClaimsCount,
     });
-  } catch (error) {
-    console.error('Error claiming ad reward:', error);
-    return res.status(500).json({ error: 'Failed to claim ad reward' });
+  } catch (error: any) {
+    console.error('❌ Error claiming ad reward:', error);
+    console.error('❌ Error stack:', error.stack);
+    console.error('❌ Error message:', error.message);
+    return res.status(500).json({ 
+      error: 'Failed to claim ad reward',
+      details: error.message 
+    });
   }
 };
 
