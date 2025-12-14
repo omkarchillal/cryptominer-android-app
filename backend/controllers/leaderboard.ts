@@ -1,40 +1,52 @@
 import { Request, Response } from 'express';
 import { MiningSession } from '../models/MiningSession';
+import { Referral } from '../models/Referral';
 
 export const getLeaderboard = async (req: Request, res: Response) => {
   try {
-    // Get the most recent session for each wallet address and their totalCoins
-    const leaderboard = await MiningSession.aggregate([
+    // Get the most recent mining session for each wallet address
+    const miningData = await MiningSession.aggregate([
       {
-        // Sort by createdAt descending to get latest sessions first
         $sort: { createdAt: -1 },
       },
       {
-        // Group by walletAddress and take the first (most recent) session
         $group: {
           _id: '$walletAddress',
           totalCoins: { $first: '$totalCoins' },
         },
       },
-      {
-        // Sort by totalCoins in descending order
-        $sort: { totalCoins: -1 },
-      },
-      {
-        // Limit to top 100 users
-        $limit: 100,
-      },
-      {
-        // Reshape the output
-        $project: {
-          _id: 0,
-          walletAddress: '$_id',
-          totalCoins: 1,
-        },
-      },
     ]);
 
-    console.log(`📊 Leaderboard: ${leaderboard.length} users`);
+    // Get all referral data
+    const referralData = await Referral.find({}, {
+      walletAddress: 1,
+      totalBalance: 1,
+    });
+
+    // Create a map to combine mining and referral data
+    const userBalances = new Map<string, number>();
+
+    // Add mining balances
+    miningData.forEach(session => {
+      userBalances.set(session._id, session.totalCoins || 0);
+    });
+
+    // Add or update with referral balances (referral totalBalance is the source of truth)
+    referralData.forEach(referral => {
+      userBalances.set(referral.walletAddress, referral.totalBalance || 0);
+    });
+
+    // Convert to leaderboard format and sort
+    const leaderboard = Array.from(userBalances.entries())
+      .map(([walletAddress, totalCoins]) => ({
+        walletAddress,
+        totalCoins,
+      }))
+      .filter(user => user.totalCoins > 0) // Only show users with positive balance
+      .sort((a, b) => b.totalCoins - a.totalCoins) // Sort by totalCoins descending
+      .slice(0, 100); // Limit to top 100
+
+    console.log(`📊 Leaderboard: ${leaderboard.length} users (including referral-only users)`);
     res.json(leaderboard);
   } catch (error) {
     console.error('Error fetching leaderboard:', error);
