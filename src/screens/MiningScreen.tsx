@@ -264,7 +264,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#fff',
     textAlign: 'center',
-    marginBottom: 12,
+    marginBottom: 5,
   },
   activeBadge: {
     backgroundColor: 'rgba(34, 197, 94, 0.8)',
@@ -282,7 +282,7 @@ const styles = StyleSheet.create({
   timerCard: {
     borderRadius: 16,
     padding: 5,
-    marginBottom: 17,
+    marginBottom: 14,
     position: 'relative',
     overflow: 'hidden',
     alignItems: 'center',
@@ -330,7 +330,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     paddingHorizontal: 10,
     paddingVertical: 5,
-    marginBottom: 17,
+    marginBottom: 14,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.3,
@@ -341,11 +341,11 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 18,
     fontWeight: '700',
-    marginBottom: 12,
+    marginBottom: 5,
   },
   progressContainer: {
     position: 'relative',
-    marginBottom: 13,
+    marginBottom: 5,
     paddingVertical: 6,
   },
   progressOverlay: {
@@ -394,7 +394,7 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
   tokensIcon: {
-    fontSize: 48,
+    fontSize: 43,
     marginBottom: 3,
     zIndex: 10,
   },
@@ -439,7 +439,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.1)',
     borderRadius: 12,
-    padding: 9,
+    padding: 5,
     alignItems: 'center',
   },
   infoLabel: {
