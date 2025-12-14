@@ -3,7 +3,6 @@ import {
   View,
   TextInput,
   Text,
-  Alert,
   StyleSheet,
   TouchableOpacity,
 } from 'react-native';
@@ -18,6 +17,10 @@ export default function SignupScreen({ navigation }: any) {
   const [address, setAddress] = useState('');
   const [error, setError] = useState('');
   const [showWalletPopup, setShowWalletPopup] = useState(false);
+  const [errorPopup, setErrorPopup] = useState({
+    visible: false,
+    message: '',
+  });
 
   const create = async () => {
     const trimmedAddress = address.trim();
@@ -34,7 +37,10 @@ export default function SignupScreen({ navigation }: any) {
       await refreshBalance();
       navigation.replace('Home');
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to create account');
+      setErrorPopup({
+        visible: true,
+        message: error.message || 'Failed to create account',
+      });
     }
   };
 
@@ -98,6 +104,18 @@ export default function SignupScreen({ navigation }: any) {
           onPrimaryPress={() => setShowWalletPopup(false)}
           onClose={() => setShowWalletPopup(false)}
           primaryButtonColors={['#9333ea', '#6d28d9', '#2563eb']}
+        />
+
+        {/* Error Popup */}
+        <CustomPopup
+          visible={errorPopup.visible}
+          title="Error"
+          message={errorPopup.message}
+          icon="❌"
+          primaryButtonText="Okay"
+          onPrimaryPress={() => setErrorPopup({ visible: false, message: '' })}
+          onClose={() => setErrorPopup({ visible: false, message: '' })}
+          primaryButtonColors={['#ef4444', '#dc2626', '#b91c1c']}
         />
       </SafeAreaView>
     </LinearGradient>
