@@ -5,7 +5,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
@@ -15,6 +14,7 @@ import { DurationPopup } from '../components/DurationPopup';
 import { BannerAdComponent } from '../components/BannerAd';
 import { NotificationIcon } from '../components/NotificationIcon';
 import { RewardEarnedPopup } from '../components/RewardEarnedPopup';
+import { CustomPopup } from '../components/CustomPopup';
 
 export default function HomeScreen({ navigation }: any) {
   const {
@@ -34,6 +34,17 @@ export default function HomeScreen({ navigation }: any) {
     setAdRewardPopup,
   } = useMining();
   const [popup, setPopup] = useState(false);
+  const [logoutPopup, setLogoutPopup] = useState(false);
+  const [adLimitPopup, setAdLimitPopup] = useState(false);
+  const [notificationPopup, setNotificationPopup] = useState({
+    visible: false,
+    title: '',
+    message: '',
+  });
+  const [miningErrorPopup, setMiningErrorPopup] = useState({
+    visible: false,
+    message: '',
+  });
 
   const [adRewardStatus, setAdRewardStatus] = useState({
     claimedCount: 0,
@@ -78,11 +89,7 @@ export default function HomeScreen({ navigation }: any) {
 
   const handleWatchAd = () => {
     if (!adRewardStatus.canClaim) {
-      Alert.alert(
-        'Daily Limit Reached',
-        'You have claimed all 6 ad rewards for today. Come back tomorrow!',
-        [{ text: 'OK' }],
-      );
+      setAdLimitPopup(true);
       return;
     }
 
@@ -145,26 +152,7 @@ export default function HomeScreen({ navigation }: any) {
                 <TouchableOpacity
                   onPress={async () => {
                     if (isMining) {
-                      Alert.alert(
-                        'Logout During Mining',
-                        'Your mining session will continue on the server. You can log back in anytime to check your progress.',
-                        [
-                          {
-                            text: 'Cancel',
-                            style: 'cancel',
-                          },
-                          {
-                            text: 'Logout',
-                            onPress: async () => {
-                              await logout();
-                              navigation.reset({
-                                index: 0,
-                                routes: [{ name: 'Signup' }],
-                              });
-                            },
-                          },
-                        ],
-                      );
+                      setLogoutPopup(true);
                     } else {
                       await logout();
                       navigation.reset({
@@ -360,17 +348,17 @@ export default function HomeScreen({ navigation }: any) {
                 );
 
               if (notifId) {
-                Alert.alert(
-                  'Notification Test',
-                  'Immediate notification sent! A scheduled notification will appear in 30 seconds.',
-                  [{ text: 'OK' }],
-                );
+                setNotificationPopup({
+                  visible: true,
+                  title: 'Notification Test',
+                  message: 'Immediate notification sent! A scheduled notification will appear in 30 seconds.',
+                });
               } else {
-                Alert.alert(
-                  'Notification Permission Required',
-                  'Please enable notifications in your device settings for this app.',
-                  [{ text: 'OK' }],
-                );
+                setNotificationPopup({
+                  visible: true,
+                  title: 'Notification Permission Required',
+                  message: 'Please enable notifications in your device settings for this app.',
+                });
               }
             }}
             activeOpacity={0.8}
@@ -405,20 +393,11 @@ export default function HomeScreen({ navigation }: any) {
               await startMining(sec);
               navigation.navigate('Mining');
             } catch (error: any) {
-              Alert.alert(
-                'Cannot Start Mining',
-                error.message || 'Please claim your previous rewards first',
-                [
-                  {
-                    text: 'Claim Now',
-                    onPress: () => navigation.navigate('Claim'),
-                  },
-                  {
-                    text: 'OK',
-                    style: 'cancel',
-                  },
-                ],
-              );
+              setMiningErrorPopup({
+                visible: true,
+                message:
+                  error.message || 'Please claim your previous rewards first',
+              });
             }
           }}
         />
@@ -438,6 +417,71 @@ export default function HomeScreen({ navigation }: any) {
             // Close the popup
             setAdRewardPopup(false);
           }}
+        />
+
+        {/* Logout During Mining Popup */}
+        <CustomPopup
+          visible={logoutPopup}
+          title="Logout During Mining"
+          message="Your mining session will continue on the server. You can log back in anytime to check your progress."
+          icon="🚪"
+          primaryButtonText="Logout"
+          secondaryButtonText="Cancel"
+          onPrimaryPress={async () => {
+            setLogoutPopup(false);
+            await logout();
+            navigation.reset({
+              index: 0,
+              routes: [{ name: 'Signup' }],
+            });
+          }}
+          onSecondaryPress={() => setLogoutPopup(false)}
+          onClose={() => setLogoutPopup(false)}
+          primaryButtonColors={['#ef4444', '#dc2626', '#b91c1c']}
+        />
+
+        {/* Ad Limit Popup */}
+        <CustomPopup
+          visible={adLimitPopup}
+          title="Daily Limit Reached"
+          message="You have claimed all 6 ad rewards for today. Come back tomorrow!"
+          icon="⏰"
+          primaryButtonText="Okay"
+          onPrimaryPress={() => setAdLimitPopup(false)}
+          onClose={() => setAdLimitPopup(false)}
+        />
+
+        {/* Notification Test Popup */}
+        <CustomPopup
+          visible={notificationPopup.visible}
+          title={notificationPopup.title}
+          message={notificationPopup.message}
+          icon="🔔"
+          primaryButtonText="Okay"
+          onPrimaryPress={() =>
+            setNotificationPopup({ visible: false, title: '', message: '' })
+          }
+          onClose={() =>
+            setNotificationPopup({ visible: false, title: '', message: '' })
+          }
+        />
+
+        {/* Mining Error Popup */}
+        <CustomPopup
+          visible={miningErrorPopup.visible}
+          title="Cannot Start Mining"
+          message={miningErrorPopup.message}
+          icon="⚠️"
+          primaryButtonText="Claim Now"
+          secondaryButtonText="Okay"
+          onPrimaryPress={() => {
+            setMiningErrorPopup({ visible: false, message: '' });
+            navigation.navigate('Claim');
+          }}
+          onSecondaryPress={() =>
+            setMiningErrorPopup({ visible: false, message: '' })
+          }
+          onClose={() => setMiningErrorPopup({ visible: false, message: '' })}
         />
       </SafeAreaView>
     </LinearGradient>
