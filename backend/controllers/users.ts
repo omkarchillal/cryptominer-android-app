@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { User } from '../models/User';
 import { Referral } from '../models/Referral';
+import { AdReward } from '../models/AdReward';
 
 // Generate unique referral code
 const generateReferralCode = (): string => {
@@ -48,6 +49,21 @@ export const signup = async (req: Request, res: Response) => {
   res.status(201).json(user);
 };
 
+
+const MAX_DAILY_CLAIMS = 6;
+
+const getStartOfDay = (): Date => {
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  return now;
+};
+
+const getEndOfDay = (): Date => {
+  const now = new Date();
+  now.setHours(23, 59, 59, 999);
+  return now;
+};
+
 export const getUser = async (req: Request, res: Response) => {
   const { walletAddress } = req.params;
   const user = await User.findOne({ walletAddress });
@@ -70,19 +86,39 @@ export const getUser = async (req: Request, res: Response) => {
 
   const totalBalance =
     latestSession?.totalCoins ?? referral?.totalBalance ?? 0;
-  
+
+  // Get Ad Reward Status
+  const startOfDay = getStartOfDay();
+  const endOfDay = getEndOfDay();
+
+  const todayClaimsCount = await AdReward.countDocuments({
+    walletAddress,
+    createdAt: {
+      $gte: startOfDay,
+      $lte: endOfDay,
+    },
+  });
+
+  const adRewardStatus = {
+    claimedCount: todayClaimsCount,
+    remainingClaims: Math.max(0, MAX_DAILY_CLAIMS - todayClaimsCount),
+    maxClaims: MAX_DAILY_CLAIMS,
+    canClaim: todayClaimsCount < MAX_DAILY_CLAIMS,
+  };
+
   const response: any = {
     ...user.toObject(),
     totalBalance, // Use totalCoins from latest MiningSession
     walletBalance: totalBalance, // Same as totalBalance for now
     miningStatus: activeSession ? 'active' : 'inactive',
+    adRewardStatus,
   };
-  
+
   if (activeSession) {
     response.miningStartTime = activeSession.miningStartTime;
     response.selectedHour = activeSession.selectedHour;
     response.multiplier = activeSession.multiplier;
   }
-  
+
   res.json(response);
 };

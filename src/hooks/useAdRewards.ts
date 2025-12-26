@@ -10,7 +10,8 @@ export const useAdRewards = () => {
         walletAddress,
         refreshBalance,
         setAdRewardPopup,
-        upgradeMultiplier
+        upgradeMultiplier,
+        setLocalBalance
     } = useMining();
 
     const [loadingAd, setLoadingAd] = useState(false);
@@ -91,8 +92,15 @@ export const useAdRewards = () => {
             try {
                 console.log('Processing token reward...');
                 const result = await adRewardService.claimReward(walletAddress);
-                await new Promise(r => setTimeout(r, 500)); // wait for backend
-                await refreshBalance();
+
+                // Immediately update local balance from backend response
+                if (result.newBalance !== undefined) {
+                    setLocalBalance(result.newBalance);
+                } else {
+                    // Fallback if backend doesn't return balance
+                    await refreshBalance();
+                }
+
                 setAdRewardPopup(true, result.reward);
             } catch (error: any) {
                 // Determine if it's a limit error and rethrow or handle

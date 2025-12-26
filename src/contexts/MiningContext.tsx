@@ -31,6 +31,14 @@ interface MiningConfig {
   baseRate: number;
 }
 
+export interface AdRewardStatus {
+  claimedCount: number;
+  remainingClaims: number;
+  maxClaims: number;
+  canClaim: boolean;
+  lastClaimTime?: string | null;
+}
+
 interface MiningContextType {
   walletAddress: string;
   setWalletAddress: (addr: string) => Promise<void>;
@@ -52,9 +60,12 @@ interface MiningContextType {
   showAdRewardPopup: boolean;
   adRewardTokens: number;
   setAdRewardPopup: (show: boolean, tokens?: number) => void;
+
   upgradeMultiplier: () => Promise<void>;
   claimRewards: () => Promise<number>;
   logout: () => Promise<void>;
+  setLocalBalance: (balance: number) => void;
+  adRewardStatus: AdRewardStatus;
 }
 
 const BASE_RATE = 0.01; // tokens/sec
@@ -97,6 +108,13 @@ export const MiningProvider: React.FC<{ children: React.ReactNode }> = ({
   // Ad reward popup state
   const [showAdRewardPopup, setShowAdRewardPopup] = useState(false);
   const [adRewardTokens, setAdRewardTokens] = useState(0);
+
+  const [adRewardStatus, setAdRewardStatus] = useState<AdRewardStatus>({
+    claimedCount: 0,
+    remainingClaims: 6,
+    maxClaims: 6,
+    canClaim: true,
+  });
 
   // Wrapper to persist wallet address when set
   const setWalletAddress = async (addr: string) => {
@@ -360,6 +378,10 @@ export const MiningProvider: React.FC<{ children: React.ReactNode }> = ({
         setTotalBalance(res.data.totalBalance ?? 0);
         setWalletBalance(res.data.walletBalance ?? res.data.totalBalance ?? 0);
 
+        if (res.data.adRewardStatus) {
+          setAdRewardStatus(res.data.adRewardStatus);
+        }
+
         // Sync mining status
         if (res.data.miningStatus === 'active' && res.data.miningStartTime) {
           const startTs = new Date(res.data.miningStartTime).getTime();
@@ -512,6 +534,10 @@ export const MiningProvider: React.FC<{ children: React.ReactNode }> = ({
     console.log('💰 Setting totalBalance to:', res.data.totalBalance ?? 0);
     setTotalBalance(res.data.totalBalance ?? 0);
     setWalletBalance(res.data.walletBalance ?? res.data.totalBalance ?? 0);
+
+    if (res.data.adRewardStatus) {
+      setAdRewardStatus(res.data.adRewardStatus);
+    }
 
     // Fetch mining status from database
     if (res.data.miningStatus) {
@@ -713,6 +739,11 @@ export const MiningProvider: React.FC<{ children: React.ReactNode }> = ({
     showAdRewardPopup,
     adRewardTokens,
     setAdRewardPopup,
+    setLocalBalance: (val: number) => {
+      setTotalBalance(val);
+      setWalletBalance(val);
+    },
+    adRewardStatus,
   };
 
   return (

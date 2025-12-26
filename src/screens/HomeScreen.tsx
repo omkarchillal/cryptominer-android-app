@@ -37,6 +37,7 @@ export default function HomeScreen({ navigation }: any) {
     showAdRewardPopup,
     adRewardTokens,
     setAdRewardPopup,
+    adRewardStatus,
   } = useMining();
 
   const { showAdForReward, showAdForMultiplier, loadingAd } = useAdRewards(); // Use our new hook
@@ -55,47 +56,14 @@ export default function HomeScreen({ navigation }: any) {
     message: '',
   });
 
-  const [adRewardStatus, setAdRewardStatus] = useState({
-    claimedCount: 0,
-    remainingClaims: 6,
-    canClaim: true,
-  });
+
   const [notificationKey, setNotificationKey] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
 
   const isMining = miningStatus === 'active';
   const canClaim = hasUnclaimedRewards;
 
-  // Fetch ad reward status on mount and when wallet changes
-  React.useEffect(() => {
-    if (walletAddress) {
-      fetchAdRewardStatus();
-    }
-  }, [walletAddress]);
 
-  const fetchAdRewardStatus = async () => {
-    try {
-      const { adRewardService } = await import('../services/adRewardService');
-      const status = await adRewardService.getStatus(walletAddress);
-      setAdRewardStatus(status);
-    } catch (error: any) {
-      console.error('Failed to fetch ad reward status:', error);
-      // If backend is not available, use default values
-      if (
-        error.message?.includes('404') ||
-        error.message?.includes('Network')
-      ) {
-        console.warn(
-          '⚠️ Backend not available - using default ad reward status',
-        );
-        setAdRewardStatus({
-          claimedCount: 0,
-          remainingClaims: 6,
-          canClaim: true,
-        });
-      }
-    }
-  };
 
   const handleWatchAd = () => {
     if (!adRewardStatus.canClaim) {
@@ -107,9 +75,6 @@ export default function HomeScreen({ navigation }: any) {
     showAdForReward(() => {
       // Handle limit reached
       setAdLimitPopup(true);
-    }).then(() => {
-      // Refresh status after ad flow
-      fetchAdRewardStatus();
     });
   };
 
@@ -117,7 +82,6 @@ export default function HomeScreen({ navigation }: any) {
     setRefreshing(true);
     try {
       await refreshBalance();
-      await fetchAdRewardStatus();
       setNotificationKey(prev => prev + 1); // Force notification icon to refresh
     } catch (error) {
       console.error('Error refreshing HomeScreen:', error);
@@ -130,7 +94,6 @@ export default function HomeScreen({ navigation }: any) {
   React.useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
       if (walletAddress) {
-        fetchAdRewardStatus();
         refreshBalance(); // Refresh balance to show new referral bonuses
         setNotificationKey(prev => prev + 1); // Force notification icon to refresh
 
