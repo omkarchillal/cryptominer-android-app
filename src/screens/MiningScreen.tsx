@@ -12,6 +12,7 @@ import LottieView from 'lottie-react-native';
 import { useMining } from '../contexts/MiningContext';
 import { ProgressBar } from '../components/ProgressBar';
 import { BannerAdComponent } from '../components/BannerAd';
+import { useAdRewards } from '../hooks/useAdRewards';
 
 const fmt = (s: number) => {
   const h = Math.floor(s / 3600);
@@ -25,6 +26,8 @@ const fmt = (s: number) => {
 export default function MiningScreen({ navigation }: any) {
   const { remainingSeconds, selectedDuration, liveTokens, currentMultiplier } =
     useMining();
+
+  const { showAdForMultiplier } = useAdRewards();
 
   const progress =
     selectedDuration > 0
@@ -146,7 +149,9 @@ export default function MiningScreen({ navigation }: any) {
           {/* Action Buttons */}
           <View style={styles.buttonsContainer}>
             <TouchableOpacity
-              onPress={() => navigation.navigate('Ad')}
+              onPress={() => showAdForMultiplier(() => {
+                console.log('Multiplier upgraded via mining screen hook');
+              })}
               activeOpacity={0.8}
               disabled={finished || currentMultiplier >= 6}
               style={styles.buttonHalf}

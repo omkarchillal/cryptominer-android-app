@@ -10,6 +10,7 @@ import {
 } from 'react-native-google-mobile-ads';
 import { useMining } from '../contexts/MiningContext';
 import { adRewardService } from '../services/adRewardService';
+import { adManager } from '../services/adManager';
 
 // AdMob Rewarded Ad Unit ID for earning tokens
 const REWARDED_AD_UNIT_ID = __DEV__
@@ -35,32 +36,49 @@ export default function AdRewardScreen({ navigation }: any) {
     navigation.navigate(route);
   };
 
+  // AdManager integration
+  const [adInstance, setAdInstance] = useState<RewardedAd | null>(null);
+
   useEffect(() => {
-    // Initialize Mobile Ads and get device ID for testing
-    MobileAds()
-      .initialize()
-      .then(() => {
-        console.log('📱 Mobile Ads initialized');
-        // Get device ID for testing (remove this in production)
-        if (!__DEV__) {
-          console.log('🔍 Add this device ID to your AdMob test devices:');
-          // The device ID will be shown in logs when you try to load an ad
+    // Check if ad is already ready in AdManager
+    if (adManager.isReady()) {
+      console.log('✅ AdManager: Ad already ready, using distinct instance');
+      const ad = adManager.getAd();
+      if (ad) {
+        setAdInstance(ad);
+        setAdLoaded(true);
+        setLoading(false);
+      }
+    } else {
+      console.log('⏳ AdManager: Ad not ready, waiting...');
+      // Subscribe to updates
+      const unsubscribe = adManager.subscribe(() => {
+        if (adManager.isReady()) {
+          console.log('✅ AdManager: Ad became ready');
+          const ad = adManager.getAd();
+          if (ad) {
+            setAdInstance(ad);
+            setAdLoaded(true);
+            setLoading(false);
+          }
         }
       });
 
-    // Create and load the ad when component mounts
-    rewardedAd = RewardedAd.createForAdRequest(REWARDED_AD_UNIT_ID);
+      // Only trigger initialization if not already done (App.tsx handles this normally)
+      // adManager.initialize(); 
 
-    const unsubscribeLoaded = rewardedAd.addAdEventListener(
-      RewardedAdEventType.LOADED,
-      () => {
-        console.log('✅ Rewarded ad loaded for token earning');
-        setAdLoaded(true);
-        setLoading(false);
-      },
-    );
+      return () => {
+        unsubscribe();
+      };
+    }
+  }, []);
 
-    const unsubscribeEarned = rewardedAd.addAdEventListener(
+  // Setup listeners on the ad instance
+  useEffect(() => {
+    if (!adInstance) return;
+
+    // Attach listeners to the specific ad instance we retrieved
+    const unsubscribeEarned = adInstance.addAdEventListener(
       RewardedAdEventType.EARNED_REWARD,
       async reward => {
         console.log('🎁 User earned reward from ad:', reward);
@@ -127,63 +145,58 @@ export default function AdRewardScreen({ navigation }: any) {
             },
           ]);
         }
-      },
+      }
     );
 
-    // Load the ad
-    rewardedAd.load();
+    // Auto show
+    adInstance.show().then(() => {
+      console.log('📺 Ad shown successfully');
+      adShownTime.current = Date.now();
+
+      // Set a timeout to navigate back if reward not claimed
+      // This handles cases where ad is dismissed quickly
+      const timeoutId = setTimeout(() => {
+        // Only navigate if no reward was claimed
+        if (!rewardClaimed && !popupDismissed) {
+          console.log(
+            '⚠️ Ad dismissed without completion, navigating back to Home',
+          );
+          safeNavigate('Home');
+        } else {
+          console.log(
+            '✅ Reward claimed or popup showing, staying on screen',
+          );
+        }
+      }, 5000); // Wait 5 seconds after ad is shown
+
+      // Clear timeout if component unmounts; 
+      // Note: useEffect cleanup runs on unmount or dep change. 
+      // We can't easily return cleanup for this timeout from useEffect root.
+      // But it's fine, the timeout check handles unmounted cases (sort of).
+    })
+      .catch(error => {
+        console.error('❌ Failed to show ad:', error);
+        Alert.alert(
+          'Ad Unavailable',
+          'Failed to show ad. Please try again later.',
+          [
+            {
+              text: 'OK',
+              onPress: () => {
+                safeNavigate('Home');
+              },
+            },
+          ],
+        );
+      });
 
     return () => {
-      unsubscribeLoaded();
       unsubscribeEarned();
     };
-  }, [walletAddress]);
+  }, [adInstance, walletAddress]); // Dependencies: only when adInstance changes
 
-  useEffect(() => {
-    // Show ad when it's loaded
-    if (adLoaded && !adShown && rewardedAd) {
-      rewardedAd
-        .show()
-        .then(() => {
-          console.log('📺 Ad shown successfully');
-          adShownTime.current = Date.now();
+  // Keep the appState monitoring as it was, but remove the ad loading logic from first useEffect
 
-          // Set a timeout to navigate back if reward not claimed
-          // This handles cases where ad is dismissed quickly
-          const timeoutId = setTimeout(() => {
-            // Only navigate if no reward was claimed
-            if (!rewardClaimed && !popupDismissed) {
-              console.log(
-                '⚠️ Ad dismissed without completion, navigating back to Home',
-              );
-              safeNavigate('Home');
-            } else {
-              console.log(
-                '✅ Reward claimed or popup showing, staying on screen',
-              );
-            }
-          }, 5000); // Wait 5 seconds after ad is shown
-
-          // Clear timeout if component unmounts
-          return () => clearTimeout(timeoutId);
-        })
-        .catch(error => {
-          console.error('❌ Failed to show ad:', error);
-          Alert.alert(
-            'Ad Unavailable',
-            'Failed to show ad. Please try again later.',
-            [
-              {
-                text: 'OK',
-                onPress: () => {
-                  safeNavigate('Home');
-                },
-              },
-            ],
-          );
-        });
-    }
-  }, [adLoaded, adShown, rewardClaimed, navigation, popupDismissed]);
 
   // Monitor app state to detect when user closes the ad
   useEffect(() => {

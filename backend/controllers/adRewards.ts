@@ -62,7 +62,7 @@ export const claimAdReward = async (req: Request, res: Response) => {
     let referral = await Referral.findOne({ walletAddress });
     if (!referral) {
       console.log(`❌ Referral record not found for: ${walletAddress}, creating one...`);
-      
+
       // Generate unique referral code
       const generateReferralCode = (): string => {
         const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -91,7 +91,7 @@ export const claimAdReward = async (req: Request, res: Response) => {
         hasUsedReferralCode: false,
         totalReferralPoints: 0,
       });
-      
+
       console.log(`✅ Created referral record with code: ${referralCode}`);
     }
     console.log(`✅ Found referral record with balance: ${referral.totalBalance}`);
@@ -105,13 +105,14 @@ export const claimAdReward = async (req: Request, res: Response) => {
     const latestSession = await MiningSession.findOne({ walletAddress }).sort({ createdAt: -1 });
     let newBalance: number = referral.totalBalance;
     console.log(`📊 Latest session found:`, latestSession ? 'Yes' : 'No');
-    
+
     if (latestSession) {
-      // Update the latest session's totalCoins to include the ad reward
-      latestSession.totalCoins += reward;
+      // FORCE SYNC: Set totalCoins to match Referral (Source of Truth) directly
+      // instead of incrementing, to heal any past drift or race conditions.
+      latestSession.totalCoins = referral.totalBalance;
       await latestSession.save();
       newBalance = latestSession.totalCoins;
-      console.log(`💰 Updated latest session totalCoins: ${latestSession.totalCoins}`);
+      console.log(`💰 Synced latest session totalCoins to match Referral: ${latestSession.totalCoins}`);
     } else {
       // If no session exists, create a basic one to maintain consistency
       const now = new Date();
@@ -155,9 +156,9 @@ export const claimAdReward = async (req: Request, res: Response) => {
     console.error('❌ Error claiming ad reward:', error);
     console.error('❌ Error stack:', error.stack);
     console.error('❌ Error message:', error.message);
-    return res.status(500).json({ 
+    return res.status(500).json({
       error: 'Failed to claim ad reward',
-      details: error.message 
+      details: error.message
     });
   }
 };

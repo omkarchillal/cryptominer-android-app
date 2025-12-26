@@ -204,7 +204,7 @@ export const MiningProvider: React.FC<{ children: React.ReactNode }> = ({
         (async () => {
           try {
             const timeoutPromise = new Promise((_, reject) =>
-              setTimeout(() => reject(new Error('Backend timeout')), 1000),
+              setTimeout(() => reject(new Error('Backend timeout')), 5000),
             );
 
             const res = (await Promise.race([

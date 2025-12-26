@@ -18,8 +18,11 @@ import { RewardEarnedPopup } from '../components/RewardEarnedPopup';
 import { CustomPopup } from '../components/CustomPopup';
 import { CustomRefreshControl } from '../components/CustomRefreshControl';
 
+import { useAdRewards } from '../hooks/useAdRewards';
+
 export default function HomeScreen({ navigation }: any) {
   const {
+    // ... existing ref ...
     totalBalance,
     miningStatus,
     currentMultiplier,
@@ -35,6 +38,10 @@ export default function HomeScreen({ navigation }: any) {
     adRewardTokens,
     setAdRewardPopup,
   } = useMining();
+
+  const { showAdForReward, showAdForMultiplier, loadingAd } = useAdRewards(); // Use our new hook
+
+  // ... existing state ...
   const [popup, setPopup] = useState(false);
   const [logoutPopup, setLogoutPopup] = useState(false);
   const [adLimitPopup, setAdLimitPopup] = useState(false);
@@ -96,8 +103,14 @@ export default function HomeScreen({ navigation }: any) {
       return;
     }
 
-    // Navigate directly to AdRewardScreen
-    navigation.navigate('AdReward');
+    // Trigger ad directly using hook
+    showAdForReward(() => {
+      // Handle limit reached
+      setAdLimitPopup(true);
+    }).then(() => {
+      // Refresh status after ad flow
+      fetchAdRewardStatus();
+    });
   };
 
   const handleRefresh = async () => {
@@ -411,7 +424,15 @@ export default function HomeScreen({ navigation }: any) {
           onClose={() => setPopup(false)}
           onUpgrade={() => {
             setPopup(false);
-            navigation.navigate('Ad');
+            showAdForMultiplier(
+              () => {
+                console.log('Multiplier upgraded via home screen hook');
+              },
+              () => {
+                // Limit reached callback
+                setTimeout(() => setAdLimitPopup(true), 500); // Small delay to let popup close
+              }
+            );
           }}
           onStart={async sec => {
             try {
