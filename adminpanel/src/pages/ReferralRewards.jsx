@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import {
   Download,
   Filter,
@@ -12,40 +13,29 @@ import Pagination from '../components/Pagination';
 import { adminAPI } from '../services/api';
 
 function ReferralRewards() {
-  const [referrals, setReferrals] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [pagination, setPagination] = useState({
-    page: 1,
-    limit: 20,
-    total: 0,
-    pages: 1,
+  const [page, setPage] = useState(1);
+  
+  const {
+    data: referralData,
+    isLoading: loading,
+    isPlaceholderData,
+    refetch,
+    isRefetching
+  } = useQuery({
+    queryKey: ['referrals', page],
+    queryFn: async () => {
+      const response = await adminAPI.getReferrals(page, 20);
+      return response.data;
+    },
+    placeholderData: keepPreviousData,
+    staleTime: 1000 * 60, // 1 minute
   });
 
-  useEffect(() => {
-    fetchReferrals(pagination.page);
-  }, [pagination.page]);
-
-  const fetchReferrals = async (page, isRefresh = false) => {
-    if (isRefresh) {
-      setRefreshing(true);
-    } else {
-      setLoading(true);
-    }
-    try {
-      const response = await adminAPI.getReferrals(page, pagination.limit);
-      setReferrals(response.data.referrals);
-      setPagination(response.data.pagination);
-    } catch (error) {
-      console.error('Failed to fetch referrals:', error);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
+  const referrals = referralData?.referrals || [];
+  const pagination = referralData?.pagination || { page: 1, limit: 20, total: 0, pages: 1 };
 
   const handleRefresh = () => {
-    fetchReferrals(pagination.page, true);
+    refetch();
   };
 
   const columns = [
@@ -185,11 +175,11 @@ function ReferralRewards() {
         <div className="flex items-center gap-3">
           <button
             onClick={handleRefresh}
-            disabled={refreshing}
+            disabled={isRefetching}
             className="flex items-center gap-2 px-5 py-3 bg-[#1a1a1a] border border-[#262626] rounded-xl hover:bg-[#1f1f1f] hover:border-green-500/30 transition-all font-medium disabled:opacity-50"
           >
-            <RefreshCw size={20} className={refreshing ? 'animate-spin' : ''} />
-            {refreshing ? 'Refreshing...' : 'Refresh'}
+            <RefreshCw size={20} className={isRefetching ? 'animate-spin' : ''} />
+            {isRefetching ? 'Refreshing...' : 'Refresh'}
           </button>
           <button className="flex items-center gap-2 px-5 py-3 bg-[#1a1a1a] border border-[#262626] rounded-xl hover:bg-[#1f1f1f] hover:border-green-500/30 transition-all font-medium">
             <Filter size={20} />
@@ -270,9 +260,9 @@ function ReferralRewards() {
       {/* Pagination */}
       {!loading && referrals.length > 0 && (
         <Pagination
-          currentPage={pagination.page}
+          currentPage={page}
           totalPages={pagination.pages}
-          onPageChange={page => setPagination({ ...pagination, page })}
+          onPageChange={setPage}
         />
       )}
     </div>
