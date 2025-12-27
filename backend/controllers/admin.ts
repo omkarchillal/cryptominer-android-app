@@ -564,6 +564,15 @@ export async function deleteUser(req: Request, res: Response) {
       ReferralBonus.deleteMany({ referredWallet: walletAddress }),
     );
 
+    // Log activity
+    const shortWallet = walletAddress.length > 10
+      ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`
+      : walletAddress;
+
+    await import('../utils/activity').then(({ logActivity }) =>
+      logActivity('user_deleted', walletAddress, `Admin deleted user: ${shortWallet}`)
+    );
+
     console.log(`🗑️ User deleted: ${walletAddress} and all associated data.`);
 
     res.json({ message: 'User and all associated data deleted successfully' });

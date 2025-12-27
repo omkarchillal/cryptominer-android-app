@@ -117,6 +117,19 @@ export const applyReferralCode = async (req: Request, res: Response) => {
       },
     });
 
+    // Log Activity for Admin Panel
+    const shortReferrer = referrerReferral.walletAddress.length > 10
+      ? `${referrerReferral.walletAddress.slice(0, 6)}...${referrerReferral.walletAddress.slice(-4)}`
+      : referrerReferral.walletAddress;
+
+    await import('../utils/activity').then(({ logActivity }) =>
+      logActivity(
+        'referral_created',
+        referrerReferral.walletAddress,
+        `Referral: ${walletAddress.slice(0, 6)}... used code from ${shortReferrer} (Ref: ${referralCode})`
+      )
+    );
+
     return res.json({
       success: true,
       userReward: USER_REWARD,
