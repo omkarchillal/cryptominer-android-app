@@ -80,9 +80,14 @@ function Root() {
     };
   }, []);
 
+  // Stabilize the onFinish callback to prevent Splash Screen from re-rendering/looping
+  const handleSplashFinish = React.useCallback(() => {
+    setShowInitialSplash(false);
+  }, []);
+
   // Show splash screen while loading (combines initial splash + hydration)
   if (showInitialSplash || isLoading) {
-    return <SplashScreen onFinish={() => setShowInitialSplash(false)} />;
+    return <SplashScreen onFinish={handleSplashFinish} />;
   }
 
   // Determine initial route based on wallet and mining status

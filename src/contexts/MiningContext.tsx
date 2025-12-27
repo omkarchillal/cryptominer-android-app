@@ -152,7 +152,13 @@ export const MiningProvider: React.FC<{ children: React.ReactNode }> = ({
     return rate * elapsedSeconds;
   };
 
-  const persist = async (patch: Partial<Persisted> = {}) => {
+  const persist = async (patch: Partial<Persisted> = {}, force = false) => {
+    // CRITICAL: Prevent overwriting saved state with empty default state if app hasn't fully loaded
+    if (isLoading && !force) {
+      console.log('⏳ App loading, skipping persistence to prevent data loss');
+      return;
+    }
+
     const data: Persisted = {
       walletAddress,
       miningStatus,
@@ -607,7 +613,7 @@ export const MiningProvider: React.FC<{ children: React.ReactNode }> = ({
       miningStatus: 'active',
       multiplier: currentMultiplier,
       liveTokens: 0,
-    });
+    }, true); // Force persist
   };
 
   const stopMining = async () => {
@@ -619,7 +625,7 @@ export const MiningProvider: React.FC<{ children: React.ReactNode }> = ({
     await notificationService.cancelMiningNotification();
 
     await api.post('/api/mining/stop', { walletAddress });
-    await persist({ miningStatus: 'inactive', multiplier: 1 });
+    await persist({ miningStatus: 'inactive', multiplier: 1 }, true); // Force persist
   };
 
   const upgradeMultiplier = async () => {
@@ -638,7 +644,7 @@ export const MiningProvider: React.FC<{ children: React.ReactNode }> = ({
       tickStart(startTs, selectedDuration, newMult, 0);
     }
 
-    await persist({ multiplier: newMult });
+    await persist({ multiplier: newMult }, true); // Force persist
   };
 
   const claimRewards = async () => {
@@ -654,7 +660,7 @@ export const MiningProvider: React.FC<{ children: React.ReactNode }> = ({
     await notificationService.cancelMiningNotification();
 
     await refreshBalance();
-    await persist({ miningStatus: 'inactive', liveTokens: 0, multiplier: 1 });
+    await persist({ miningStatus: 'inactive', liveTokens: 0, multiplier: 1 }, true); // Force persist
     return awarded as number;
   };
 

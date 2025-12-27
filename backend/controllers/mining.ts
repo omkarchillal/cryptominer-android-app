@@ -27,7 +27,7 @@ export const start = async (req: Request, res: Response) => {
   // Get totalCoins from the most recent session (source of truth for display)
   const previousSession = await MiningSession.findOne({ walletAddress })
     .sort({ createdAt: -1 });
-  
+
   let totalCoins = 0;
   if (previousSession) {
     // Carry forward totalCoins from previous session
@@ -106,7 +106,8 @@ export const claim = async (req: Request, res: Response) => {
 
     if (referrer) {
       // Calculate 10% bonus
-      const bonusAmount = Math.floor(awarded * 0.1);
+      // Calculate 10% bonus (allow decimals)
+      const bonusAmount = awarded * 0.1;
 
       // Award bonus to referrer
       await Referral.findOneAndUpdate(
@@ -128,7 +129,7 @@ export const claim = async (req: Request, res: Response) => {
       );
 
       // Create notification for referrer
-      const shortWallet = walletAddress.length > 10 
+      const shortWallet = walletAddress.length > 10
         ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`
         : walletAddress;
       await Notification.create({
