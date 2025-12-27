@@ -17,27 +17,17 @@ export async function getDashboardStats(_req: Request, res: Response) {
       claimed: true,
     });
 
-    // Get total balance from latest mining sessions (totalCoins)
-    // Group by walletAddress and get the latest session for each user
-    const latestSessions = await MiningSession.aggregate([
-      {
-        $sort: { createdAt: -1 },
-      },
-      {
-        $group: {
-          _id: '$walletAddress',
-          totalCoins: { $first: '$totalCoins' },
-        },
-      },
+    // Get total balance from Referral collection (Source of Truth)
+    const balanceResult = await Referral.aggregate([
       {
         $group: {
           _id: null,
-          totalBalance: { $sum: '$totalCoins' },
+          totalBalance: { $sum: '$totalBalance' },
         },
       },
     ]);
 
-    const totalBalance = latestSessions[0]?.totalBalance || 0;
+    const totalBalance = balanceResult[0]?.totalBalance || 0;
 
     // Calculate average mining rate
     const activeSessions = await MiningSession.find({ status: 'mining' });
