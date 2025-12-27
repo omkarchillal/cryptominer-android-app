@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { adminAPI } from '../services/api';
 import { UserPlus, UserMinus, Pickaxe, Gift, Users, CreditCard } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const getActivityIcon = (type) => {
   switch (type) {
@@ -39,6 +40,7 @@ const formatTimeAgo = (dateString) => {
 function NotificationDropdown({ onClose }) {
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchActivities();
@@ -89,7 +91,13 @@ function NotificationDropdown({ onClose }) {
       </div>
 
       <div className="p-3 bg-[#1f1f1f] border-t border-[#262626] text-center">
-        <button className="text-xs text-green-400 hover:text-green-300 font-medium transition-colors">
+        <button 
+          onClick={() => {
+            navigate('/notifications');
+            onClose();
+          }}
+          className="text-xs text-green-400 hover:text-green-300 font-medium transition-colors"
+        >
           View All Activities
         </button>
       </div>

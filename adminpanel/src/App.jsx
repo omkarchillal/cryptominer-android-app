@@ -6,6 +6,7 @@ import Mining from './pages/Mining';
 import Payment from './pages/Payment';
 import ReferralRewards from './pages/ReferralRewards';
 import DailyRewards from './pages/DailyRewards';
+import Notifications from './pages/Notifications';
 import './App.css';
 
 function App() {
@@ -18,7 +19,9 @@ function App() {
           <Route path="/mining" element={<Mining />} />
           <Route path="/payment" element={<Payment />} />
           <Route path="/referral-rewards" element={<ReferralRewards />} />
+          <Route path="/referral-rewards" element={<ReferralRewards />} />
           <Route path="/daily-rewards" element={<DailyRewards />} />
+          <Route path="/notifications" element={<Notifications />} />
         </Routes>
       </Layout>
     </Router>

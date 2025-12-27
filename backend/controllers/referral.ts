@@ -126,7 +126,8 @@ export const applyReferralCode = async (req: Request, res: Response) => {
       logActivity(
         'referral_created',
         referrerReferral.walletAddress,
-        `Referral: ${walletAddress.slice(0, 6)}... used code from ${shortReferrer} (Ref: ${referralCode})`
+        `Referral: ${walletAddress.slice(0, 6)}... used code from ${shortReferrer} (Ref: ${referralCode})`,
+        { relatedUser: walletAddress }
       )
     );
 
