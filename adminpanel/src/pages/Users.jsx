@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { Download, Filter, Search, RefreshCw, Trash2 } from 'lucide-react';
 import Table from '../components/Table';
 import Pagination from '../components/Pagination';
@@ -6,54 +7,58 @@ import ConfirmationModal from '../components/ConfirmationModal';
 import { adminAPI } from '../services/api';
 
 function Users() {
-  const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+  const queryClient = useQueryClient();
+  const [page, setPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
-  const [pagination, setPagination] = useState({
-    page: 1,
-    limit: 20,
-    total: 0,
-    pages: 1,
+  
+  // Debounce search (simplified via effect or just query key)
+  // For now relying on React Query's deduplication
+
+  // Users Query
+  const {
+    data: usersData,
+    isLoading: loading,
+    isPlaceholderData,
+    refetch,
+    isRefetching
+  } = useQuery({
+    queryKey: ['users', page, searchQuery],
+    queryFn: async () => {
+      const response = await adminAPI.getUsers(page, 20, searchQuery);
+      return response.data;
+    },
+    placeholderData: keepPreviousData, // Keep old data while fetching new page
+    staleTime: 1000 * 60, // 1 minute
   });
+
+  const users = usersData?.users || [];
+  const pagination = usersData?.pagination || { page: 1, limit: 20, total: 0, pages: 1 };
   
   // Delete Modal State
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState(null);
 
-  useEffect(() => {
-    fetchUsers(pagination.page);
-  }, [pagination.page, searchQuery]);
-
-  const fetchUsers = async (page, isRefresh = false) => {
-    if (isRefresh) {
-      setRefreshing(true);
-    } else {
-      setLoading(true);
+  // Delete Mutation
+  const deleteMutation = useMutation({
+    mutationFn: (walletAddress) => adminAPI.deleteUser(walletAddress),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['users']);
+      setDeleteModalOpen(false);
+      setUserToDelete(null);
+    },
+    onError: (error) => {
+      console.error('Failed to delete user:', error);
+      alert('Failed to delete user');
     }
-    try {
-      const response = await adminAPI.getUsers(
-        page,
-        pagination.limit,
-        searchQuery,
-      );
-      setUsers(response.data.users);
-      setPagination(response.data.pagination);
-    } catch (error) {
-      console.error('Failed to fetch users:', error);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
+  });
 
   const handleRefresh = () => {
-    fetchUsers(pagination.page, true);
+    refetch();
   };
 
   const handleSearch = e => {
     setSearchQuery(e.target.value);
-    setPagination({ ...pagination, page: 1 }); // Reset to first page on search
+    setPage(1); // Reset to first page
   };
 
   const handleDeleteClick = (walletAddress) => {
@@ -61,18 +66,9 @@ function Users() {
     setDeleteModalOpen(true);
   };
 
-  const  confirmDelete = async () => {
-    if (!userToDelete) return;
-    
-    try {
-      await adminAPI.deleteUser(userToDelete);
-      // Refresh list
-      fetchUsers(pagination.page, true);
-      setDeleteModalOpen(false);
-      setUserToDelete(null);
-    } catch (error) {
-      console.error('Failed to delete user:', error);
-      alert('Failed to delete user');
+  const confirmDelete = () => {
+    if (userToDelete) {
+      deleteMutation.mutate(userToDelete);
     }
   };
 
@@ -190,11 +186,11 @@ function Users() {
         <div className="flex items-center gap-3">
           <button
             onClick={handleRefresh}
-            disabled={refreshing}
+            disabled={isRefetching}
             className="flex items-center gap-2 px-5 py-3 bg-[#1a1a1a] border border-[#262626] rounded-xl hover:bg-[#1f1f1f] hover:border-green-500/30 transition-all font-medium disabled:opacity-50"
           >
-            <RefreshCw size={20} className={refreshing ? 'animate-spin' : ''} />
-            {refreshing ? 'Refreshing...' : 'Refresh'}
+            <RefreshCw size={20} className={isRefetching ? 'animate-spin' : ''} />
+            {isRefetching ? 'Refreshing...' : 'Refresh'}
           </button>
           <button className="flex items-center gap-2 px-5 py-3 bg-[#1a1a1a] border border-[#262626] rounded-xl hover:bg-[#1f1f1f] hover:border-green-500/30 transition-all font-medium">
             <Filter size={20} />
@@ -236,9 +232,9 @@ function Users() {
       {/* Pagination */}
       {!loading && users.length > 0 && (
         <Pagination
-          currentPage={pagination.page}
+          currentPage={page}
           totalPages={pagination.pages}
-          onPageChange={page => setPagination({ ...pagination, page })}
+          onPageChange={setPage}
         />
       )}
       {/* Delete Confirmation Modal */}

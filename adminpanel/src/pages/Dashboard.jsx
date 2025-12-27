@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import {
   Users,
   Activity,
@@ -12,7 +13,44 @@ import StatsCard from '../components/StatsCard';
 import { adminAPI } from '../services/api';
 
 function Dashboard() {
-  const [stats, setStats] = useState({
+  const [showNotifications, setShowNotifications] = useState(false);
+
+  // Stats Query
+  const { 
+    data: stats, 
+    isLoading: loadingStats, 
+    refetch: refetchStats,
+    isRefetching: isRefetchingStats 
+  } = useQuery({
+    queryKey: ['dashboard-stats'],
+    queryFn: async () => {
+      const res = await adminAPI.getDashboardStats();
+      return res.data;
+    },
+    // Reasonable default for stats
+    staleTime: 1000 * 60 * 2, // 2 mins
+  });
+
+  // Activities Query
+  const { 
+    data: activities, 
+    refetch: refetchActivities 
+  } = useQuery({
+    queryKey: ['dashboard-activities'],
+    queryFn: async () => {
+      const res = await adminAPI.getActivities(50);
+      return res.data.activities;
+    },
+    staleTime: 1000 * 30, // 30 seconds
+  });
+
+  const handleRefresh = () => {
+    refetchStats();
+    refetchActivities();
+  };
+  
+  // Safe defaults
+  const safeStats = stats || {
     totalUsers: 0,
     activeMiningSessions: 0,
     totalReferrals: 0,
@@ -21,47 +59,10 @@ function Dashboard() {
     avgMiningRate: 0,
     totalTransactions: 0,
     successRate: 0,
-  });
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [activities, setActivities] = useState([]);
-  const [showNotifications, setShowNotifications] = useState(false);
-
-  useEffect(() => {
-    fetchStats();
-    fetchActivities();
-  }, []);
-
-  const fetchStats = async (isRefresh = false) => {
-    if (isRefresh) {
-      setRefreshing(true);
-    } else {
-      setLoading(true);
-    }
-    try {
-      const response = await adminAPI.getDashboardStats();
-      setStats(response.data);
-    } catch (error) {
-      console.error('Failed to fetch stats:', error);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
   };
-
-  const handleRefresh = () => {
-    fetchStats(true);
-    fetchActivities();
-  };
-
-  const fetchActivities = async () => {
-    try {
-      const response = await adminAPI.getActivities(50);
-      setActivities(response.data.activities);
-    } catch (error) {
-      console.error('Failed to fetch activities:', error);
-    }
-  };
+  const safeActivities = activities || [];
+  const refreshing = isRefetchingStats;
+  const loading = loadingStats;
 
   const getActivityIcon = type => {
     switch (type) {
@@ -135,28 +136,28 @@ function Dashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatsCard
           title="Total Users"
-          value={stats.totalUsers.toLocaleString()}
+          value={safeStats.totalUsers.toLocaleString()}
           icon={Users}
           trend={12.5}
           color="blue"
         />
         <StatsCard
           title="Active Mining"
-          value={stats.activeMiningSessions.toLocaleString()}
+          value={safeStats.activeMiningSessions.toLocaleString()}
           icon={Activity}
           trend={8.2}
           color="green"
         />
         <StatsCard
           title="Total Referrals"
-          value={stats.totalReferrals.toLocaleString()}
+          value={safeStats.totalReferrals.toLocaleString()}
           icon={Gift}
           trend={15.3}
           color="purple"
         />
         <StatsCard
           title="Rewards Claimed"
-          value={stats.totalRewardsClaimed.toLocaleString()}
+          value={safeStats.totalRewardsClaimed.toLocaleString()}
           icon={Award}
           trend={-2.4}
           color="orange"
@@ -176,7 +177,7 @@ function Dashboard() {
                 </p>
                 <div className="flex items-baseline gap-3">
                   <h2 className="text-5xl font-bold bg-gradient-to-r from-green-400 to-emerald-500 bg-clip-text text-transparent">
-                    {(stats.totalBalance || 0).toFixed(4)}
+                    {(safeStats.totalBalance || 0).toFixed(4)}
                   </h2>
                   <span className="text-2xl text-gray-500 font-semibold">
                     Tokens
@@ -205,19 +206,19 @@ function Dashboard() {
             <div className="flex items-center justify-between p-3 bg-[#0f0f0f] rounded-xl border border-[#262626]">
               <span className="text-gray-400 text-sm">Avg. Mining Rate</span>
               <span className="font-bold text-green-400">
-                {stats.avgMiningRate.toFixed(4)} BTC/h
+                {safeStats.avgMiningRate.toFixed(4)} BTC/h
               </span>
             </div>
             <div className="flex items-center justify-between p-3 bg-[#0f0f0f] rounded-xl border border-[#262626]">
               <span className="text-gray-400 text-sm">Total Transactions</span>
               <span className="font-bold text-blue-400">
-                {stats.totalTransactions.toLocaleString()}
+                {safeStats.totalTransactions.toLocaleString()}
               </span>
             </div>
             <div className="flex items-center justify-between p-3 bg-[#0f0f0f] rounded-xl border border-[#262626]">
               <span className="text-gray-400 text-sm">Success Rate</span>
               <span className="font-bold text-purple-400">
-                {stats.successRate.toFixed(1)}%
+                {safeStats.successRate.toFixed(1)}%
               </span>
             </div>
           </div>
@@ -236,7 +237,7 @@ function Dashboard() {
           </button>
         </div>
         <div className="space-y-3">
-          {activities.slice(0, 4).map((activity, index) => (
+          {safeActivities.slice(0, 4).map((activity, index) => (
             <div
               key={index}
               className="flex items-center justify-between p-4 bg-[#0f0f0f] rounded-xl border border-[#262626] hover:border-green-500/30 transition-all"

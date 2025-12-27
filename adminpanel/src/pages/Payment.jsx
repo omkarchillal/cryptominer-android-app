@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import {
   Download,
   Filter,
@@ -12,66 +13,57 @@ import Pagination from '../components/Pagination';
 import { adminAPI } from '../services/api';
 
 function Payment() {
-  const [payments, setPayments] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [processingPayment, setProcessingPayment] = useState(null);
+  const queryClient = useQueryClient();
+  const [page, setPage] = useState(1);
   const [showSuccess, setShowSuccess] = useState(null);
-  const [pagination, setPagination] = useState({
-    page: 1,
-    limit: 20,
-    total: 0,
-    pages: 1,
+
+  const {
+    data: paymentsData,
+    isLoading: loading,
+    isPlaceholderData,
+    refetch,
+    isRefetching
+  } = useQuery({
+    queryKey: ['payments', page],
+    queryFn: async () => {
+      const response = await adminAPI.getPayments(page, 20);
+      return response.data;
+    },
+    placeholderData: keepPreviousData,
+    staleTime: 1000 * 60, // 1 minute
   });
 
-  useEffect(() => {
-    fetchPayments(pagination.page);
-  }, [pagination.page]);
-
-  const fetchPayments = async (page, isRefresh = false) => {
-    if (isRefresh) {
-      setRefreshing(true);
-    } else {
-      setLoading(true);
-    }
-    try {
-      const response = await adminAPI.getPayments(page, pagination.limit);
-      setPayments(response.data.payments);
-      setPagination(response.data.pagination);
-    } catch (error) {
-      console.error('Failed to fetch payments:', error);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
-
-  const handleRefresh = () => {
-    fetchPayments(pagination.page, true);
-  };
-
-  const handlePayment = async walletAddress => {
-    setProcessingPayment(walletAddress);
-    try {
-      const response = await adminAPI.processPayment(walletAddress);
-
-      if (response.data.success) {
-        // Show success animation
+  const payments = paymentsData?.payments || [];
+  const pagination = paymentsData?.pagination || { page: 1, limit: 20, total: 0, pages: 1 };
+  
+  // Processing Payment Logic via Mutation
+  const paymentMutation = useMutation({
+    mutationFn: (walletAddress) => adminAPI.processPayment(walletAddress),
+    onSuccess: (data, walletAddress) => {
+      if (data.data.success) {
         setShowSuccess(walletAddress);
-
         // Refresh data after 2 seconds
         setTimeout(() => {
           setShowSuccess(null);
-          fetchPayments(pagination.page, true);
+          queryClient.invalidateQueries(['payments']);
         }, 2000);
       }
-    } catch (error) {
+    },
+    onError: (error) => {
       console.error('Payment failed:', error);
       alert('Payment processing failed. Please try again.');
-    } finally {
-      setProcessingPayment(null);
     }
+  });
+
+  const handleRefresh = () => {
+    refetch();
   };
+
+  const handlePayment = (walletAddress) => {
+    paymentMutation.mutate(walletAddress);
+  };
+  
+  const processingPayment = paymentMutation.isPending ? paymentMutation.variables : null;
 
   const totalBalance = payments.reduce((sum, p) => sum + (p.balance || 0), 0);
 
@@ -202,11 +194,11 @@ function Payment() {
         <div className="flex items-center gap-3">
           <button
             onClick={handleRefresh}
-            disabled={refreshing}
+            disabled={isRefetching}
             className="flex items-center gap-2 px-5 py-3 bg-[#1a1a1a] border border-[#262626] rounded-xl hover:bg-[#1f1f1f] hover:border-green-500/30 transition-all font-medium disabled:opacity-50"
           >
-            <RefreshCw size={20} className={refreshing ? 'animate-spin' : ''} />
-            {refreshing ? 'Refreshing...' : 'Refresh'}
+            <RefreshCw size={20} className={isRefetching ? 'animate-spin' : ''} />
+            {isRefetching ? 'Refreshing...' : 'Refresh'}
           </button>
           <button className="flex items-center gap-2 px-5 py-3 bg-[#1a1a1a] border border-[#262626] rounded-xl hover:bg-[#1f1f1f] hover:border-green-500/30 transition-all font-medium">
             <Filter size={20} />
@@ -254,9 +246,9 @@ function Payment() {
       {/* Pagination */}
       {!loading && payments.length > 0 && (
         <Pagination
-          currentPage={pagination.page}
+          currentPage={page}
           totalPages={pagination.pages}
-          onPageChange={page => setPagination({ ...pagination, page })}
+          onPageChange={setPage}
         />
       )}
     </div>

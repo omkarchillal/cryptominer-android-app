@@ -1,44 +1,34 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { Download, Filter, RefreshCw } from 'lucide-react';
 import Table from '../components/Table';
 import Pagination from '../components/Pagination';
 import { adminAPI } from '../services/api';
 
 function Mining() {
-  const [sessions, setSessions] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [pagination, setPagination] = useState({
-    page: 1,
-    limit: 20,
-    total: 0,
-    pages: 1,
+  const [page, setPage] = useState(1);
+  
+  const {
+    data: sessionsData,
+    isLoading: loading,
+    isPlaceholderData,
+    refetch,
+    isRefetching
+  } = useQuery({
+    queryKey: ['mining-sessions', page],
+    queryFn: async () => {
+      const response = await adminAPI.getMiningSessions(page, 20);
+      return response.data;
+    },
+    placeholderData: keepPreviousData,
+    staleTime: 1000 * 60, // 1 minute
   });
 
-  useEffect(() => {
-    fetchSessions(pagination.page);
-  }, [pagination.page]);
-
-  const fetchSessions = async (page, isRefresh = false) => {
-    if (isRefresh) {
-      setRefreshing(true);
-    } else {
-      setLoading(true);
-    }
-    try {
-      const response = await adminAPI.getMiningSessions(page, pagination.limit);
-      setSessions(response.data.sessions);
-      setPagination(response.data.pagination);
-    } catch (error) {
-      console.error('Failed to fetch mining sessions:', error);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
+  const sessions = sessionsData?.sessions || [];
+  const pagination = sessionsData?.pagination || { page: 1, limit: 20, total: 0, pages: 1 };
 
   const handleRefresh = () => {
-    fetchSessions(pagination.page, true);
+    refetch();
   };
 
   const columns = [
@@ -146,11 +136,11 @@ function Mining() {
         <div className="flex items-center gap-3">
           <button
             onClick={handleRefresh}
-            disabled={refreshing}
+            disabled={isRefetching}
             className="flex items-center gap-2 px-5 py-3 bg-[#1a1a1a] border border-[#262626] rounded-xl hover:bg-[#1f1f1f] hover:border-green-500/30 transition-all font-medium disabled:opacity-50"
           >
-            <RefreshCw size={20} className={refreshing ? 'animate-spin' : ''} />
-            {refreshing ? 'Refreshing...' : 'Refresh'}
+            <RefreshCw size={20} className={isRefetching ? 'animate-spin' : ''} />
+            {isRefetching ? 'Refreshing...' : 'Refresh'}
           </button>
           <button className="flex items-center gap-2 px-5 py-3 bg-[#1a1a1a] border border-[#262626] rounded-xl hover:bg-[#1f1f1f] hover:border-green-500/30 transition-all font-medium">
             <Filter size={20} />
@@ -189,9 +179,9 @@ function Mining() {
       {/* Pagination */}
       {!loading && sessions.length > 0 && (
         <Pagination
-          currentPage={pagination.page}
+          currentPage={page}
           totalPages={pagination.pages}
-          onPageChange={page => setPagination({ ...pagination, page })}
+          onPageChange={setPage}
         />
       )}
     </div>
