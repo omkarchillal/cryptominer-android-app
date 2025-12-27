@@ -10,11 +10,11 @@ Below are quick setup, run instructions, and additional context for running and 
 
 ### Environment
 Place environment variables into `backend/.env` (the `backend` directory contains the server code):
-- MONGO_URI: e.g. `MONGO_URI=mongodb+srv://<user>:<password>@cluster.mongodb.net/cryptominerapp?retryWrites=true&w=majority`
+- MONGO_URI: Your MongoDB connection string
 - PORT (defaults to 3000)
 - BASE_RATE, MAX_MULTIPLIER (used for mining calculations)
 
-> Deployed backend: https://cryptominer-android-app.onrender.com
+> Deployed backend is hosted on Render.
 
 > Important: Never commit production credentials to the repo. Use `.env` locally and secret managers in production.
 
@@ -27,6 +27,17 @@ Place environment variables into `backend/.env` (the `backend` directory contain
 2) Start Metro: `npm start` or `npm run start` (already configured in `package.json`).
 3) For Android: `npm run android` (or `npx react-native run-android`).
 4) For iOS: `npm run ios` (macOS only, requires Xcode).
+
+### Run Admin Panel (Web Dashboard)
+1) Install dependencies: `cd adminpanel && npm ci`
+2) Start dev server: `npm run dev`
+
+### 🛠️ Admin Panel Features
+The platform includes a comprehensive web dashboard for management:
+- **Dashboard**: Real-time stats on users, active miners, total platform balance, and rewards.
+- **User Management**: Search users and perform **Cascading Deletion** (removes user + all related logs/rewards).
+- **Activity Feed**: Live log of system events (Signups, Mining Claims, Referrals).
+- **Financials**: detailed views of Mining Sessions, Referral Rewards, and Ad Claims.
 
 ### Useful Commands
 - Install all dependencies (root + backend):
