@@ -343,8 +343,9 @@ export async function getAllReferrals(req: Request, res: Response) {
         );
 
         // Calculate total mining bonus amount (10% commissions)
+        // Filter out records where miningReward is 0 (which are fixed signup bonuses)
         const totalMiningBonus = bonuses.reduce(
-          (sum, b) => sum + b.bonusAmount,
+          (sum, b) => (b.miningReward > 0 ? sum + b.bonusAmount : sum),
           0,
         );
 
@@ -516,5 +517,58 @@ export async function getActivities(req: Request, res: Response) {
   } catch (error) {
     console.error('Failed to fetch activities:', error);
     res.status(500).json({ error: 'Failed to fetch activities' });
+  }
+}
+
+export async function deleteUser(req: Request, res: Response) {
+  const { walletAddress } = req.params;
+
+  if (!walletAddress) {
+    return res.status(400).json({ error: 'Wallet address is required' });
+  }
+
+  try {
+    // 1. Delete Primary User Record
+    const userResult = await User.deleteOne({ walletAddress });
+    if (userResult.deletedCount === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // 2. Delete Referral Record
+    await Referral.deleteOne({ walletAddress });
+
+    // 3. Delete Mining Sessions
+    await MiningSession.deleteMany({ walletAddress });
+
+    // 4. Delete Ad Rewards
+    await AdReward.deleteMany({ walletAddress });
+
+    // 5. Delete Payments
+    await Payment.deleteMany({ walletAddress });
+
+    // 6. Delete Activities
+    await Activity.deleteMany({ walletAddress });
+
+    // 7. Delete Notifications (optional, if you have this model)
+    // await Notification.deleteMany({ walletAddress });
+
+    // 8. Delete Referral Bonuses
+    // Delete bonuses earned BY this user (as referrer)
+    await import('../models/ReferralBonus').then(({ ReferralBonus }) =>
+      ReferralBonus.deleteMany({ walletAddress }),
+    );
+    // Delete bonuses earned FOR this user (as referee) - optional, keeping for data integrity of referrer
+    // But user requested "all data belong to the user", so we delete where they are the source too?
+    // Let's delete where they are the referredWallet as well to be clean.
+    await import('../models/ReferralBonus').then(({ ReferralBonus }) =>
+      ReferralBonus.deleteMany({ referredWallet: walletAddress }),
+    );
+
+    console.log(`🗑️ User deleted: ${walletAddress} and all associated data.`);
+
+    res.json({ message: 'User and all associated data deleted successfully' });
+  } catch (error) {
+    console.error('Delete user error:', error);
+    res.status(500).json({ error: 'Failed to delete user' });
   }
 }

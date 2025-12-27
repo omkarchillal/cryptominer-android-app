@@ -17,6 +17,7 @@ export const adminAPI = {
         if (search) params.append('search', search);
         return api.get(`/admin/users?${params.toString()}`);
     },
+    deleteUser: (walletAddress) => api.delete(`/admin/users/${walletAddress}`),
     getMiningSessions: (page = 1, limit = 20) => api.get(`/admin/mining?page=${page}&limit=${limit}`),
     getPayments: (page = 1, limit = 20) => api.get(`/admin/payments?page=${page}&limit=${limit}`),
     processPayment: (walletAddress) => api.post('/admin/payments/process', { walletAddress }),
