@@ -8,13 +8,13 @@ import SignupScreen from './src/screens/SignupScreen';
 import HomeScreen from './src/screens/HomeScreen';
 import MiningScreen from './src/screens/MiningScreen';
 import ClaimScreen from './src/screens/ClaimScreen';
-import AdScreen from './src/screens/AdScreen';
-import AdRewardScreen from './src/screens/AdRewardScreen';
+
 import ReferralScreen from './src/screens/ReferralScreen';
 import LeaderBoardScreen from './src/screens/LeaderBoardScreenWrapper';
 import NotificationsScreen from './src/screens/NotificationsScreen';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { notificationService } from './src/services/notificationService';
+import { adManager } from './src/services/adManager';
 import notifee from '@notifee/react-native';
 
 const Stack = createStackNavigator();
@@ -32,6 +32,7 @@ function Root() {
     (async () => {
       try {
         await notificationService.initialize();
+        adManager.initialize(); // Start loading ads in background
         await notificationService.handleBackgroundNotification();
 
         // Check if app was opened from a notification (when app was killed/closed)
@@ -79,9 +80,14 @@ function Root() {
     };
   }, []);
 
+  // Stabilize the onFinish callback to prevent Splash Screen from re-rendering/looping
+  const handleSplashFinish = React.useCallback(() => {
+    setShowInitialSplash(false);
+  }, []);
+
   // Show splash screen while loading (combines initial splash + hydration)
   if (showInitialSplash || isLoading) {
-    return <SplashScreen onFinish={() => setShowInitialSplash(false)} />;
+    return <SplashScreen onFinish={handleSplashFinish} />;
   }
 
   // Determine initial route based on wallet and mining status
@@ -102,8 +108,7 @@ function Root() {
         <Stack.Screen name="Home" component={HomeScreen} />
         <Stack.Screen name="Mining" component={MiningScreen} />
         <Stack.Screen name="Claim" component={ClaimScreen} />
-        <Stack.Screen name="Ad" component={AdScreen} />
-        <Stack.Screen name="AdReward" component={AdRewardScreen} />
+
         <Stack.Screen name="Referral" component={ReferralScreen} />
         <Stack.Screen name="LeaderBoard" component={LeaderBoardScreen} />
         <Stack.Screen name="Notifications" component={NotificationsScreen} />

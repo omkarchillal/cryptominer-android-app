@@ -44,7 +44,7 @@ export async function getDashboardStats(_req: Request, res: Response) {
     const avgMiningRate =
       activeSessions.length > 0
         ? activeSessions.reduce((sum, s) => sum + 0.01 * s.multiplier, 0) /
-          activeSessions.length
+        activeSessions.length
         : 0;
 
     // Count total transactions (mining sessions + payments)
@@ -333,7 +333,7 @@ export async function getAllReferrals(req: Request, res: Response) {
           referralCode: referral.usedReferralCode,
         });
 
-        // Get referral bonuses for this relationship
+        // Get referral mining bonuses for this relationship
         const bonuses = await import('../models/ReferralBonus').then(
           ({ ReferralBonus }) =>
             ReferralBonus.find({
@@ -342,23 +342,23 @@ export async function getAllReferrals(req: Request, res: Response) {
             }),
         );
 
-        // Calculate total bonus amounts
-        const totalReferrerBonus = bonuses.reduce(
+        // Calculate total mining bonus amount (10% commissions)
+        const totalMiningBonus = bonuses.reduce(
           (sum, b) => sum + b.bonusAmount,
           0,
         );
-        const totalReferredReward = bonuses.reduce(
-          (sum, b) => sum + b.miningReward,
-          0,
-        );
+
+        // Constants for signup rewards (as defined in referral controller)
+        const REFERRER_SIGNUP_BONUS = 200;
+        const REFERRED_SIGNUP_BONUS = 100;
 
         return {
           referrerWallet: referrer?.walletAddress || 'Unknown',
           referredWallet: referral.walletAddress,
           referralCode: referral.usedReferralCode || 'N/A',
-          referrerBonus: totalReferrerBonus, // 10% bonus to referrer
-          referredReward: totalReferredReward, // Original mining reward
-          miningBonus: bonuses.length, // Number of mining bonuses
+          referrerBonus: REFERRER_SIGNUP_BONUS, // Fixed 200 tokens
+          referredReward: REFERRED_SIGNUP_BONUS, // Fixed 100 tokens
+          miningBonus: totalMiningBonus, // Accumulated mining commissions
           createdAt: referral.createdAt,
         };
       }),
@@ -386,15 +386,22 @@ export async function getAllDailyRewards(req: Request, res: Response) {
     const skip = (page - 1) * limit;
 
     const rewards = await AdReward.find()
-      .sort({ claimedAt: -1 })
+      .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
       .select('-__v');
 
     const total = await AdReward.countDocuments();
 
+    // Enrich rewards with status (since they exist in DB, they are claimed)
+    const enrichedRewards = rewards.map((reward) => ({
+      ...reward.toObject(),
+      claimed: true,
+      claimedAt: reward.createdAt,
+    }));
+
     res.json({
-      rewards,
+      rewards: enrichedRewards,
       pagination: {
         page,
         limit,

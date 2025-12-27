@@ -133,8 +133,9 @@ function ReferralRewards() {
         <div className="flex items-center gap-2">
           <TrendingUp size={16} className="text-orange-400" />
           <span className="text-orange-400 font-bold">
-            {row.miningBonus || 0}
+            {(row.miningBonus || 0).toFixed(2)}
           </span>
+          <span className="text-gray-500 text-sm">Tokens</span>
         </div>
       ),
     },

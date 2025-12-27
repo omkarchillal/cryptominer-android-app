@@ -31,6 +31,14 @@ interface MiningConfig {
   baseRate: number;
 }
 
+export interface AdRewardStatus {
+  claimedCount: number;
+  remainingClaims: number;
+  maxClaims: number;
+  canClaim: boolean;
+  lastClaimTime?: string | null;
+}
+
 interface MiningContextType {
   walletAddress: string;
   setWalletAddress: (addr: string) => Promise<void>;
@@ -52,9 +60,12 @@ interface MiningContextType {
   showAdRewardPopup: boolean;
   adRewardTokens: number;
   setAdRewardPopup: (show: boolean, tokens?: number) => void;
+
   upgradeMultiplier: () => Promise<void>;
   claimRewards: () => Promise<number>;
   logout: () => Promise<void>;
+  setLocalBalance: (balance: number) => void;
+  adRewardStatus: AdRewardStatus;
 }
 
 const BASE_RATE = 0.01; // tokens/sec
@@ -98,6 +109,13 @@ export const MiningProvider: React.FC<{ children: React.ReactNode }> = ({
   const [showAdRewardPopup, setShowAdRewardPopup] = useState(false);
   const [adRewardTokens, setAdRewardTokens] = useState(0);
 
+  const [adRewardStatus, setAdRewardStatus] = useState<AdRewardStatus>({
+    claimedCount: 0,
+    remainingClaims: 6,
+    maxClaims: 6,
+    canClaim: true,
+  });
+
   // Wrapper to persist wallet address when set
   const setWalletAddress = async (addr: string) => {
     console.log('💼 Setting wallet address:', addr);
@@ -134,7 +152,13 @@ export const MiningProvider: React.FC<{ children: React.ReactNode }> = ({
     return rate * elapsedSeconds;
   };
 
-  const persist = async (patch: Partial<Persisted> = {}) => {
+  const persist = async (patch: Partial<Persisted> = {}, force = false) => {
+    // CRITICAL: Prevent overwriting saved state with empty default state if app hasn't fully loaded
+    if (isLoading && !force) {
+      console.log('⏳ App loading, skipping persistence to prevent data loss');
+      return;
+    }
+
     const data: Persisted = {
       walletAddress,
       miningStatus,
@@ -204,7 +228,7 @@ export const MiningProvider: React.FC<{ children: React.ReactNode }> = ({
         (async () => {
           try {
             const timeoutPromise = new Promise((_, reject) =>
-              setTimeout(() => reject(new Error('Backend timeout')), 1000),
+              setTimeout(() => reject(new Error('Backend timeout')), 5000),
             );
 
             const res = (await Promise.race([
@@ -360,6 +384,10 @@ export const MiningProvider: React.FC<{ children: React.ReactNode }> = ({
         setTotalBalance(res.data.totalBalance ?? 0);
         setWalletBalance(res.data.walletBalance ?? res.data.totalBalance ?? 0);
 
+        if (res.data.adRewardStatus) {
+          setAdRewardStatus(res.data.adRewardStatus);
+        }
+
         // Sync mining status
         if (res.data.miningStatus === 'active' && res.data.miningStartTime) {
           const startTs = new Date(res.data.miningStartTime).getTime();
@@ -513,6 +541,10 @@ export const MiningProvider: React.FC<{ children: React.ReactNode }> = ({
     setTotalBalance(res.data.totalBalance ?? 0);
     setWalletBalance(res.data.walletBalance ?? res.data.totalBalance ?? 0);
 
+    if (res.data.adRewardStatus) {
+      setAdRewardStatus(res.data.adRewardStatus);
+    }
+
     // Fetch mining status from database
     if (res.data.miningStatus) {
       setMiningStatus(res.data.miningStatus);
@@ -581,7 +613,7 @@ export const MiningProvider: React.FC<{ children: React.ReactNode }> = ({
       miningStatus: 'active',
       multiplier: currentMultiplier,
       liveTokens: 0,
-    });
+    }, true); // Force persist
   };
 
   const stopMining = async () => {
@@ -593,7 +625,7 @@ export const MiningProvider: React.FC<{ children: React.ReactNode }> = ({
     await notificationService.cancelMiningNotification();
 
     await api.post('/api/mining/stop', { walletAddress });
-    await persist({ miningStatus: 'inactive', multiplier: 1 });
+    await persist({ miningStatus: 'inactive', multiplier: 1 }, true); // Force persist
   };
 
   const upgradeMultiplier = async () => {
@@ -612,7 +644,7 @@ export const MiningProvider: React.FC<{ children: React.ReactNode }> = ({
       tickStart(startTs, selectedDuration, newMult, 0);
     }
 
-    await persist({ multiplier: newMult });
+    await persist({ multiplier: newMult }, true); // Force persist
   };
 
   const claimRewards = async () => {
@@ -628,7 +660,7 @@ export const MiningProvider: React.FC<{ children: React.ReactNode }> = ({
     await notificationService.cancelMiningNotification();
 
     await refreshBalance();
-    await persist({ miningStatus: 'inactive', liveTokens: 0, multiplier: 1 });
+    await persist({ miningStatus: 'inactive', liveTokens: 0, multiplier: 1 }, true); // Force persist
     return awarded as number;
   };
 
@@ -713,6 +745,11 @@ export const MiningProvider: React.FC<{ children: React.ReactNode }> = ({
     showAdRewardPopup,
     adRewardTokens,
     setAdRewardPopup,
+    setLocalBalance: (val: number) => {
+      setTotalBalance(val);
+      setWalletBalance(val);
+    },
+    adRewardStatus,
   };
 
   return (

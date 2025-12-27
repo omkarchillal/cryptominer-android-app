@@ -8,16 +8,7 @@ import {
   TestIds,
 } from 'react-native-google-mobile-ads';
 import { useMining } from '../contexts/MiningContext';
-
-// ✅ ADMOB REWARDED AD UNIT ID - CONFIGURED ✅
-// Development: Uses TestIds.REWARDED (test ads)
-// Production: Uses your actual Ad Unit ID from AdMob console
-// Your Ad Unit ID: ca-app-pub-7930332952469106/6559535492
-const REWARDED_AD_UNIT_ID = __DEV__
-  ? TestIds.REWARDED // Test ad for development
-  : 'ca-app-pub-7930332952469106/6559535492'; // ✅ YOUR PRODUCTION AD UNIT ID
-
-let rewardedAd: RewardedAd | null = null;
+import { adManager } from '../services/adManager';
 
 export default function AdScreen({ navigation }: any) {
   const { upgradeMultiplier } = useMining();
@@ -25,23 +16,44 @@ export default function AdScreen({ navigation }: any) {
   const [adShown, setAdShown] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    // Create and load the ad when component mounts
-    rewardedAd = RewardedAd.createForAdRequest(REWARDED_AD_UNIT_ID);
+  // AdManager integration
+  const [adInstance, setAdInstance] = useState<RewardedAd | null>(null);
 
-    const unsubscribeLoaded = rewardedAd.addAdEventListener(
-      RewardedAdEventType.LOADED,
-      () => {
-        console.log('✅ Rewarded ad loaded');
+  useEffect(() => {
+    // Check if ad is already ready in AdManager
+    if (adManager.isReady()) {
+      console.log('✅ AdManager: Ad already ready for multiplier, using instance');
+      const ad = adManager.getAd();
+      if (ad) {
+        setAdInstance(ad);
         setAdLoaded(true);
         setLoading(false);
-      },
-    );
+      }
+    } else {
+      console.log('⏳ AdManager: Ad not ready for multiplier, waiting...');
+      // Subscribe to updates
+      const unsubscribe = adManager.subscribe(() => {
+        if (adManager.isReady()) {
+          console.log('✅ AdManager: Ad became ready for multiplier');
+          const ad = adManager.getAd();
+          if (ad) {
+            setAdInstance(ad);
+            setAdLoaded(true);
+            setLoading(false);
+          }
+        }
+      });
+      return () => unsubscribe();
+    }
+  }, []);
 
-    const unsubscribeEarned = rewardedAd.addAdEventListener(
+  useEffect(() => {
+    if (!adInstance) return;
+
+    const unsubscribeEarned = adInstance.addAdEventListener(
       RewardedAdEventType.EARNED_REWARD,
       reward => {
-        console.log('🎁 User earned reward:', reward);
+        console.log('🎁 User earned reward (multiplier):', reward);
         setAdShown(true);
         // Upgrade multiplier after user earns reward
         upgradeMultiplier()
@@ -67,39 +79,27 @@ export default function AdScreen({ navigation }: any) {
       },
     );
 
-    // Load the ad
-    rewardedAd.load();
+    // Show the ad
+    adInstance
+      .show()
+      .then(() => {
+        console.log('📺 Ad shown successfully');
+      })
+      .catch(error => {
+        console.error('❌ Failed to show ad:', error);
+        Alert.alert(
+          'Ad Unavailable',
+          'Failed to show ad. Please try again later.',
+          [
+            { text: "OK", onPress: () => navigation.goBack() }
+          ]
+        );
+      });
 
     return () => {
-      unsubscribeLoaded();
       unsubscribeEarned();
     };
-  }, []);
-
-  useEffect(() => {
-    // Show ad when it's loaded
-    if (adLoaded && !adShown && rewardedAd) {
-      rewardedAd
-        .show()
-        .then(() => {
-          console.log('📺 Ad shown successfully');
-          // Ad is now showing, EARNED_REWARD event will handle completion
-        })
-        .catch(error => {
-          console.error('❌ Failed to show ad:', error);
-          Alert.alert(
-            'Ad Unavailable',
-            'Failed to show ad. Please try again later.',
-          );
-          // Navigate back safely
-          if (navigation.canGoBack()) {
-            navigation.goBack();
-          } else {
-            navigation.navigate('Home');
-          }
-        });
-    }
-  }, [adLoaded, adShown]);
+  }, [adInstance]);
 
   return (
     <LinearGradient

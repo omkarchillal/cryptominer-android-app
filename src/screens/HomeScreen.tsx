@@ -18,8 +18,11 @@ import { RewardEarnedPopup } from '../components/RewardEarnedPopup';
 import { CustomPopup } from '../components/CustomPopup';
 import { CustomRefreshControl } from '../components/CustomRefreshControl';
 
+import { useAdRewards } from '../hooks/useAdRewards';
+
 export default function HomeScreen({ navigation }: any) {
   const {
+    // ... existing ref ...
     totalBalance,
     miningStatus,
     currentMultiplier,
@@ -34,7 +37,12 @@ export default function HomeScreen({ navigation }: any) {
     showAdRewardPopup,
     adRewardTokens,
     setAdRewardPopup,
+    adRewardStatus,
   } = useMining();
+
+  const { showAdForReward, showAdForMultiplier, loadingAd } = useAdRewards(); // Use our new hook
+
+  // ... existing state ...
   const [popup, setPopup] = useState(false);
   const [logoutPopup, setLogoutPopup] = useState(false);
   const [adLimitPopup, setAdLimitPopup] = useState(false);
@@ -48,47 +56,14 @@ export default function HomeScreen({ navigation }: any) {
     message: '',
   });
 
-  const [adRewardStatus, setAdRewardStatus] = useState({
-    claimedCount: 0,
-    remainingClaims: 6,
-    canClaim: true,
-  });
+
   const [notificationKey, setNotificationKey] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
 
   const isMining = miningStatus === 'active';
   const canClaim = hasUnclaimedRewards;
 
-  // Fetch ad reward status on mount and when wallet changes
-  React.useEffect(() => {
-    if (walletAddress) {
-      fetchAdRewardStatus();
-    }
-  }, [walletAddress]);
 
-  const fetchAdRewardStatus = async () => {
-    try {
-      const { adRewardService } = await import('../services/adRewardService');
-      const status = await adRewardService.getStatus(walletAddress);
-      setAdRewardStatus(status);
-    } catch (error: any) {
-      console.error('Failed to fetch ad reward status:', error);
-      // If backend is not available, use default values
-      if (
-        error.message?.includes('404') ||
-        error.message?.includes('Network')
-      ) {
-        console.warn(
-          '⚠️ Backend not available - using default ad reward status',
-        );
-        setAdRewardStatus({
-          claimedCount: 0,
-          remainingClaims: 6,
-          canClaim: true,
-        });
-      }
-    }
-  };
 
   const handleWatchAd = () => {
     if (!adRewardStatus.canClaim) {
@@ -96,15 +71,17 @@ export default function HomeScreen({ navigation }: any) {
       return;
     }
 
-    // Navigate directly to AdRewardScreen
-    navigation.navigate('AdReward');
+    // Trigger ad directly using hook
+    showAdForReward(() => {
+      // Handle limit reached
+      setAdLimitPopup(true);
+    });
   };
 
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
       await refreshBalance();
-      await fetchAdRewardStatus();
       setNotificationKey(prev => prev + 1); // Force notification icon to refresh
     } catch (error) {
       console.error('Error refreshing HomeScreen:', error);
@@ -117,7 +94,6 @@ export default function HomeScreen({ navigation }: any) {
   React.useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
       if (walletAddress) {
-        fetchAdRewardStatus();
         refreshBalance(); // Refresh balance to show new referral bonuses
         setNotificationKey(prev => prev + 1); // Force notification icon to refresh
 
@@ -411,7 +387,15 @@ export default function HomeScreen({ navigation }: any) {
           onClose={() => setPopup(false)}
           onUpgrade={() => {
             setPopup(false);
-            navigation.navigate('Ad');
+            showAdForMultiplier(
+              () => {
+                console.log('Multiplier upgraded via home screen hook');
+              },
+              () => {
+                // Limit reached callback
+                setTimeout(() => setAdLimitPopup(true), 500); // Small delay to let popup close
+              }
+            );
           }}
           onStart={async sec => {
             try {
