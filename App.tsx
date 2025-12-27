@@ -80,6 +80,20 @@ function Root() {
     };
   }, []);
 
+  useEffect(() => {
+    // Force navigation to Signup screen when wallet address is cleared (logout)
+    // This ensures the user is taken out of the Home screen immediately
+    if (!walletAddress && !isLoading && !showInitialSplash) {
+      console.log('🚪 Wallet address cleared - forcing navigation to Signup');
+      navigationRef.current?.reset({
+        index: 0,
+        routes: [{ name: 'Signup' }],
+      });
+    }
+  }, [walletAddress, isLoading, showInitialSplash]);
+
+  // Handle foreground notification press
+
   // Stabilize the onFinish callback to prevent Splash Screen from re-rendering/looping
   const handleSplashFinish = React.useCallback(() => {
     setShowInitialSplash(false);

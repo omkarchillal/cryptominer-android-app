@@ -29,7 +29,33 @@ api.interceptors.response.use(
   err => {
     console.error('❌ API Error:', err.message);
     console.error('❌ Error details:', err.response?.data || err.message);
+
+    // Check for session expiry (User deleted or invalid)
+    if (err.response?.status === 404) {
+      console.log('🔍 404 Error Detected. URL:', err.config.url);
+      console.log('🔍 Response Data:', JSON.stringify(err.response.data));
+
+      const isUserNotFound =
+        err.response?.data?.message === 'User not found' ||
+        err.response?.data?.error === 'User not found';
+
+      if (isUserNotFound) {
+        console.log('🚪 "User not found" matched - triggering logout handler');
+        if (onSessionExpired) {
+          onSessionExpired();
+        } else {
+          console.warn('⚠️ onSessionExpired handler is NOT set!');
+        }
+      }
+    }
+
     const msg = err?.response?.data?.message || err.message;
     return Promise.reject(new Error(msg));
   },
 );
+
+let onSessionExpired: (() => void) | null = null;
+
+export const setSessionExpiredHandler = (handler: () => void) => {
+  onSessionExpired = handler;
+};

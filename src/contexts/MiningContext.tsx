@@ -8,7 +8,7 @@ import React, {
 } from 'react';
 import { AppState, AppStateStatus } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { api } from '../services/api';
+import { api, setSessionExpiredHandler } from '../services/api';
 import { notificationService } from '../services/notificationService';
 
 type MiningStatus = 'active' | 'inactive';
@@ -341,6 +341,13 @@ export const MiningProvider: React.FC<{ children: React.ReactNode }> = ({
 
   useEffect(() => {
     console.log('🚀 MiningContext initializing...');
+
+    // Register auto-logout handler
+    console.log('🔌 Registering session expiry handler...');
+    setSessionExpiredHandler(() => {
+      console.log('🚪 Session expired (User deleted), logging out...');
+      logout();
+    });
 
     // Run both in parallel and don't wait for config to finish loading
     fetchConfig(); // Non-blocking

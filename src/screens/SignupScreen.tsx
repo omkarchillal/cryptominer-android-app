@@ -101,6 +101,8 @@ export default function SignupScreen({ navigation }: any) {
                 placeholderTextColor="rgba(255, 255, 255, 0.6)"
                 autoCapitalize="none"
                 style={styles.input}
+                onSubmitEditing={create}
+                returnKeyType="done"
               />
               {error ? <Text style={styles.errorText}>{error}</Text> : null}
             </View>

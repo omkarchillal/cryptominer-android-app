@@ -2,6 +2,7 @@ import { Schema, model } from 'mongoose';
 
 export type ActivityType =
   | 'user_created'
+  | 'user_deleted'
   | 'mining_started'
   | 'mining_claimed'
   | 'reward_claimed'
@@ -21,6 +22,7 @@ const ActivitySchema = new Schema<IActivity>({
     type: String,
     enum: [
       'user_created',
+      'user_deleted',
       'mining_started',
       'mining_claimed',
       'reward_claimed',
@@ -39,5 +41,7 @@ const ActivitySchema = new Schema<IActivity>({
 // Index for efficient queries
 ActivitySchema.index({ createdAt: -1 });
 ActivitySchema.index({ type: 1, createdAt: -1 });
+// TTL Index: Delete documents after 30 days (2592000 seconds)
+ActivitySchema.index({ createdAt: 1 }, { expireAfterSeconds: 2592000 });
 
 export const Activity = model<IActivity>('Activity', ActivitySchema);

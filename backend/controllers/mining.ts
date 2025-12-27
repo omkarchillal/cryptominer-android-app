@@ -152,6 +152,19 @@ export const claim = async (req: Request, res: Response) => {
   session.status = 'claimed';
   await session.save();
 
+  // Log Activity for Admin Panel
+  const shortWallet = walletAddress.length > 10
+    ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`
+    : walletAddress;
+
+  await import('../utils/activity').then(({ logActivity }) =>
+    logActivity(
+      'mining_claimed',
+      walletAddress,
+      `${shortWallet} claimed mining reward: ${awarded.toFixed(2)} tokens`
+    )
+  );
+
   res.json({ awarded, totalBalance: referral?.totalBalance ?? awarded });
 };
 

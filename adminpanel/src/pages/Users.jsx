@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Download, Filter, Search, RefreshCw } from 'lucide-react';
+import { Download, Filter, Search, RefreshCw, Trash2 } from 'lucide-react';
 import Table from '../components/Table';
 import Pagination from '../components/Pagination';
+import ConfirmationModal from '../components/ConfirmationModal';
 import { adminAPI } from '../services/api';
 
 function Users() {
@@ -15,6 +16,10 @@ function Users() {
     total: 0,
     pages: 1,
   });
+  
+  // Delete Modal State
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState(null);
 
   useEffect(() => {
     fetchUsers(pagination.page);
@@ -49,6 +54,26 @@ function Users() {
   const handleSearch = e => {
     setSearchQuery(e.target.value);
     setPagination({ ...pagination, page: 1 }); // Reset to first page on search
+  };
+
+  const handleDeleteClick = (walletAddress) => {
+    setUserToDelete(walletAddress);
+    setDeleteModalOpen(true);
+  };
+
+  const  confirmDelete = async () => {
+    if (!userToDelete) return;
+    
+    try {
+      await adminAPI.deleteUser(userToDelete);
+      // Refresh list
+      fetchUsers(pagination.page, true);
+      setDeleteModalOpen(false);
+      setUserToDelete(null);
+    } catch (error) {
+      console.error('Failed to delete user:', error);
+      alert('Failed to delete user');
+    }
   };
 
   const columns = [
@@ -135,6 +160,19 @@ function Users() {
         </span>
       ),
     },
+    {
+      header: 'Actions',
+      accessor: 'actions',
+      render: row => (
+        <button 
+          onClick={() => handleDeleteClick(row.walletAddress)}
+          className="p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+          title="Delete User"
+        >
+          <Trash2 size={18} />
+        </button>
+      ),
+    },
   ];
 
   return (
@@ -203,6 +241,16 @@ function Users() {
           onPageChange={page => setPagination({ ...pagination, page })}
         />
       )}
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        onConfirm={confirmDelete}
+        title="Delete User"
+        message="Are you sure you want to delete this user? This action cannot be undone and will permanently remove all associated data, including mining history, rewards, and bonuses."
+        confirmText="Delete User"
+        type="danger"
+      />
     </div>
   );
 }

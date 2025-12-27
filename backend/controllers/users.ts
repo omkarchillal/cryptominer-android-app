@@ -43,6 +43,15 @@ export const signup = async (req: Request, res: Response) => {
     totalReferralPoints: 0,
   });
 
+  // Log activity
+  const shortWallet = walletAddress.length > 10
+    ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`
+    : walletAddress;
+
+  await import('../utils/activity').then(({ logActivity }) =>
+    logActivity('user_created', walletAddress, `New user registered: ${shortWallet}`)
+  );
+
   console.log(
     `✅ New user created: ${walletAddress} | Referral code: ${referralCode}`,
   );

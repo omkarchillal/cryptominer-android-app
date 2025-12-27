@@ -73,12 +73,20 @@ export const applyReferralCode = async (req: Request, res: Response) => {
     userReferral.usedReferralCode = referralCode.toUpperCase();
     await userReferral.save();
 
+    // Create a bonus record for the referrer so it appears in history
+    await ReferralBonus.create({
+      walletAddress: referrerReferral.walletAddress,
+      referredWallet: walletAddress,
+      bonusAmount: REFERRER_REWARD,
+      miningReward: 0, // 0 indicates this is a fixed signup reward, not from mining
+    });
+
     console.log(
       `🎁 Referral applied: ${walletAddress} used ${referralCode} | Referrer earned ${REFERRER_REWARD}, User earned ${USER_REWARD}`,
     );
 
     // Create notification for referrer (user1 - code owner)
-    const shortWallet = walletAddress.length > 10 
+    const shortWallet = walletAddress.length > 10
       ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`
       : walletAddress;
     await Notification.create({
@@ -94,7 +102,7 @@ export const applyReferralCode = async (req: Request, res: Response) => {
     });
 
     // Create notification for user who used the code (user2 - code user)
-    const shortReferrerWallet = referrerReferral.walletAddress.length > 10 
+    const shortReferrerWallet = referrerReferral.walletAddress.length > 10
       ? `${referrerReferral.walletAddress.slice(0, 6)}...${referrerReferral.walletAddress.slice(-4)}`
       : referrerReferral.walletAddress;
     await Notification.create({
@@ -108,6 +116,20 @@ export const applyReferralCode = async (req: Request, res: Response) => {
         referralCode: referralCode.toUpperCase(),
       },
     });
+
+    // Log Activity for Admin Panel
+    const shortReferrer = referrerReferral.walletAddress.length > 10
+      ? `${referrerReferral.walletAddress.slice(0, 6)}...${referrerReferral.walletAddress.slice(-4)}`
+      : referrerReferral.walletAddress;
+
+    await import('../utils/activity').then(({ logActivity }) =>
+      logActivity(
+        'referral_created',
+        referrerReferral.walletAddress,
+        `Referral: ${walletAddress.slice(0, 6)}... used code from ${shortReferrer} (Ref: ${referralCode})`,
+        { relatedUser: walletAddress }
+      )
+    );
 
     return res.json({
       success: true,
