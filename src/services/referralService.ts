@@ -21,7 +21,7 @@ export interface ApplyReferralResponse {
 class ReferralService {
   async getStats(walletAddress: string): Promise<ReferralStats> {
     try {
-      const response = await api.get(`/api/referral/stats/${walletAddress}`);
+      const response = await api.get(`/referral/stats/${walletAddress}`);
       return response.data;
     } catch (error) {
       console.error('Failed to get referral stats:', error);
@@ -34,7 +34,7 @@ class ReferralService {
     referralCode: string,
   ): Promise<ApplyReferralResponse> {
     try {
-      const response = await api.post('/api/referral/apply', {
+      const response = await api.post('/referral/apply', {
         walletAddress,
         referralCode: referralCode.toUpperCase(),
       });

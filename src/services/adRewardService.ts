@@ -19,7 +19,7 @@ export interface ClaimAdRewardResponse {
 class AdRewardService {
   async getStatus(walletAddress: string): Promise<AdRewardStatus> {
     try {
-      const response = await api.get(`/api/ad-rewards/status/${walletAddress}`);
+      const response = await api.get(`/ad-rewards/status/${walletAddress}`);
       return response.data;
     } catch (error) {
       console.error('Failed to get ad reward status:', error);
@@ -29,7 +29,7 @@ class AdRewardService {
 
   async claimReward(walletAddress: string): Promise<ClaimAdRewardResponse> {
     try {
-      const response = await api.post('/api/ad-rewards/claim', {
+      const response = await api.post('/ad-rewards/claim', {
         walletAddress,
       });
       return response.data;
