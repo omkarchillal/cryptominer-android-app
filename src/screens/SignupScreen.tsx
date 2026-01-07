@@ -37,7 +37,7 @@ export default function SignupScreen({ navigation }: any) {
 
     setLoading(true);
     try {
-      await api.post('/api/users/signup', { walletAddress: trimmedAddress });
+      await api.post('/users/signup', { walletAddress: trimmedAddress });
       await setWalletAddress(trimmedAddress);
       await refreshBalance();
       navigation.replace('Home');

@@ -34,7 +34,7 @@ export default function LeaderBoardScreenWrapper({ navigation }: any) {
   const fetchLeaderboard = async () => {
     try {
       console.log('🏆 Fetching leaderboard from backend...');
-      const response = await api.get('/api/leaderboard');
+      const response = await api.get('/leaderboard');
       console.log('✅ Leaderboard data received:', response.data);
 
       // Transform and rank users
@@ -56,8 +56,7 @@ export default function LeaderBoardScreenWrapper({ navigation }: any) {
       setUsers(leaderboardData);
       console.log(`✅ Loaded ${leaderboardData.length} users to leaderboard`);
       console.log(
-        `📊 Top 3: ${leaderboardData.slice(0, 3).length}, Rest: ${
-          leaderboardData.slice(3).length
+        `📊 Top 3: ${leaderboardData.slice(0, 3).length}, Rest: ${leaderboardData.slice(3).length
         }`,
       );
     } catch (error) {

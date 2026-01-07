@@ -232,7 +232,7 @@ export const MiningProvider: React.FC<{ children: React.ReactNode }> = ({
             );
 
             const res = (await Promise.race([
-              api.get(`/api/users/${walletAddr}`),
+              api.get(`/users/${walletAddr}`),
               timeoutPromise,
             ])) as any;
 
@@ -306,7 +306,7 @@ export const MiningProvider: React.FC<{ children: React.ReactNode }> = ({
   const fetchConfig = async () => {
     try {
       console.log('🔧 Fetching mining config from backend...');
-      const res = await api.get('/api/config');
+      const res = await api.get('/config');
       setConfig({
         durations: res.data.durations,
         multiplierOptions: res.data.multiplierOptions,
@@ -385,7 +385,7 @@ export const MiningProvider: React.FC<{ children: React.ReactNode }> = ({
 
     const syncWithBackend = async () => {
       try {
-        const res = await api.get(`/api/users/${walletAddress}`);
+        const res = await api.get(`/users/${walletAddress}`);
 
         // Update balance
         setTotalBalance(res.data.totalBalance ?? 0);
@@ -542,7 +542,7 @@ export const MiningProvider: React.FC<{ children: React.ReactNode }> = ({
   const refreshBalance = async () => {
     if (!walletAddress) return;
     console.log('🔄 Fetching balance for:', walletAddress);
-    const res = await api.get(`/api/users/${walletAddress}`);
+    const res = await api.get(`/users/${walletAddress}`);
     console.log('📊 Balance response:', res.data);
     console.log('💰 Setting totalBalance to:', res.data.totalBalance ?? 0);
     setTotalBalance(res.data.totalBalance ?? 0);
@@ -595,7 +595,7 @@ export const MiningProvider: React.FC<{ children: React.ReactNode }> = ({
     const clientStartTs = Date.now();
 
     // Backend records authoritative session
-    const res = await api.post('/api/mining/start', {
+    const res = await api.post('/mining/start', {
       walletAddress,
       selectedHour: Math.round(durationSeconds / 3600),
       multiplier: currentMultiplier,
@@ -631,13 +631,13 @@ export const MiningProvider: React.FC<{ children: React.ReactNode }> = ({
     // Cancel scheduled notification
     await notificationService.cancelMiningNotification();
 
-    await api.post('/api/mining/stop', { walletAddress });
+    await api.post('/mining/stop', { walletAddress });
     await persist({ miningStatus: 'inactive', multiplier: 1 }, true); // Force persist
   };
 
   const upgradeMultiplier = async () => {
     if (currentMultiplier >= MAX_MULTIPLIER) return;
-    const res = await api.put('/api/mining/upgrade', { walletAddress });
+    const res = await api.put('/mining/upgrade', { walletAddress });
     const newMult = res.data.multiplier as number;
     setCurrentMultiplier(newMult);
 
@@ -655,7 +655,7 @@ export const MiningProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const claimRewards = async () => {
-    const res = await api.post('/api/mining/claim', { walletAddress });
+    const res = await api.post('/mining/claim', { walletAddress });
     // Server recomputes and returns awarded tokens to avoid client tampering
     const { awarded } = res.data;
     setLiveTokens(0);
